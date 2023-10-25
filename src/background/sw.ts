@@ -34,11 +34,6 @@ const swState: SWState = {
 /// INITIALIZATION
 
 chrome.runtime.onInstalled.addListener(async function () {
-  const modelProvider = await getModelProvider();
-  if (modelProvider) {
-    await modelService.updateCurrentModelProvider();
-  }
-
   const management = await chrome.management.getSelf();
   swState.installType = management.installType as InstallType;
 });
@@ -46,7 +41,6 @@ chrome.runtime.onInstalled.addListener(async function () {
 /// STORAGE EVENTS
 
 chrome.storage.local.onChanged.addListener(function (changes) {
-  // TODO - change
   if (changes) {
     const aiModelConfigChange = changes[STORAGE_FIELD_AI_MODEL_CONFIG];
 
@@ -334,3 +328,12 @@ function sendUrlChangeMessage(url: string) {
     }
   });
 }
+
+async function init() {
+  const modelProvider = await getModelProvider();
+  if (modelProvider) {
+    await modelService.updateCurrentModelProvider();
+  }
+}
+
+init().catch(console.error);
