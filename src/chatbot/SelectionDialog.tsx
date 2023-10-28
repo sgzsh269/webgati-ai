@@ -124,8 +124,8 @@ export function SelectionDialog({
           ref={containerRef}
           sx={{
             position: "absolute",
-            top: `${selection.bottom + 10}px`,
-            left: `${selection.left + 10}px`,
+            top: `${selection.bottom}px`,
+            left: `${selection.left}px`,
             zIndex: 2147483601,
             fontFamily: "arial, sans-serif",
             fontSize: "16px",
@@ -180,7 +180,7 @@ export function SelectionDialog({
           )}
           {!opened && (
             <ActionIcon onClick={showDialog} variant="filled" color="blue">
-              <IconAsterisk size="24px" />
+              <IconAsterisk size="20px" />
             </ActionIcon>
           )}
         </Box>

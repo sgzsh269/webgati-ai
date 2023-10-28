@@ -37,9 +37,7 @@ export function useSWMessaging(
       });
       port?.onMessage.addListener(handleMessage);
 
-      port?.onDisconnect.addListener(() => {
-        setSWPort(null);
-      });
+      port?.onDisconnect.addListener(handleDisconnect);
 
       setSWPort(port);
     };
@@ -77,6 +75,10 @@ export function useSWMessaging(
         default:
           break;
       }
+    };
+
+    const handleDisconnect = () => {
+      connectToSW();
     };
 
     connectToSW();

@@ -41,7 +41,7 @@ class ModelService {
 
   getCurrentLLM() {
     if (this.currentModelProvider !== "openai") {
-      throw new Error("Only OpenAI is supported for now");
+      throw new Error("Only OpenAI is supported");
     }
     return new ChatOpenAI({
       modelName: this.currentModelProviderConfig?.modelName,
