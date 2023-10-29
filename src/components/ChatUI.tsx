@@ -65,6 +65,12 @@ export const ChatUI = ({
     scrollIntoView();
   }, [messages, scrollIntoView]);
 
+  useEffect(() => {
+    if (showLoader) {
+      scrollIntoView();
+    }
+  }, [showLoader, scrollIntoView]);
+
   const handleEnterKey = (event: KeyboardEvent) => {
     event.preventDefault();
     form.validate();

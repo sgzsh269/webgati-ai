@@ -43,7 +43,17 @@ export const Message = React.forwardRef<HTMLDivElement, MessageProps>(
           remarkPlugins={[remarkGfm]}
           components={{
             p: ({ ...props }) => {
-              return <p style={{ margin: "0px" }} {...props} />;
+              return (
+                <Text
+                  component="p"
+                  sx={{
+                    marginTop: "4px",
+                    marginBottom: "4px",
+                    whiteSpace: "pre-wrap",
+                  }}
+                  {...props}
+                />
+              );
             },
           }}
         >

@@ -26,6 +26,9 @@ export function QuestionTextArea({
       onKeyDown={(event) => {
         if (event.key !== "Enter") {
           event.stopPropagation();
+        } else if (event.shiftKey) {
+          // Shift + Enter, move to a new line
+          event.stopPropagation();
         } else {
           handleEnterKey(event as unknown as KeyboardEvent);
         }
