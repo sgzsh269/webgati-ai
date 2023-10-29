@@ -6,12 +6,7 @@ import { renderSelectionDialog } from "../../chatbot/SelectionDialog";
 const generateSelectionDialogPrompt = (
   selectedText: string,
   instructions: string
-) => `**Selected Text:**\n
-  ${selectedText}
-  \n
-  **Instructions:**\n
-  ${instructions}
-  `;
+) => `**Selected Text:**\n${selectedText}\n**Instructions:**\n${instructions}`;
 
 export function useSelectionDialog(
   onUserPrompt: (prompt: string) => void,

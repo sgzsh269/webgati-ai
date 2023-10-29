@@ -70,30 +70,36 @@ chrome.tabs.onCreated.addListener(function (tab) {
 });
 
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo) {
-  // "loading" can be triggered by page refresh or navigation
-  if (changeInfo.status === "loading") {
-    const tabState = swState.tabIdStateMap[tabId];
-    tabState?.port?.disconnect();
-    delete swState.tabIdStateMap[tabId];
-    initTabState(tabId as number);
-  }
-  if (changeInfo.url) {
+  // Re-init tab state when url changes or page is refreshed
+  // When page is refreshed, only 'favIconUrl' field gets updated
+  if (changeInfo.url || changeInfo.favIconUrl) {
     if (
-      changeInfo.url.includes("chrome-extension://") ||
-      changeInfo.url.includes("chrome://")
+      changeInfo.url?.includes("chrome-extension://") ||
+      changeInfo.url?.includes("chrome://")
     ) {
       return;
     }
+
     const tabState = swState.tabIdStateMap[tabId];
 
-    if (!tabState) {
-      console.log("Unexpected Error: Tab state not found");
-      return;
+    let oldUrl = "";
+    if (tabState) {
+      oldUrl = tabState.url!;
+      tabState.port?.disconnect();
+      delete swState.tabIdStateMap[tabId];
     }
 
-    tabState.url = changeInfo.url;
+    initTabState(tabId);
 
-    sendUrlChangeMessage(changeInfo.url);
+    const newTabState = swState.tabIdStateMap[tabId] as TabState;
+
+    if (changeInfo.url) {
+      newTabState.url = changeInfo.url;
+      sendUrlChangeMessage(changeInfo.url);
+    } else {
+      newTabState.url = oldUrl;
+      sendUrlChangeMessage(oldUrl!);
+    }
   }
 });
 
@@ -140,10 +146,11 @@ chrome.runtime.onConnect.addListener(function (port) {
   }
   const tabId = parseInt(port.name.split("-")[1]);
 
-  let tabState = swState.tabIdStateMap[tabId] as TabState;
+  const tabState = swState.tabIdStateMap[tabId] as TabState;
+
   if (!tabState) {
-    initTabState(tabId);
-    tabState = swState.tabIdStateMap[tabId] as TabState;
+    console.log("Unexpected error: tabState not found");
+    return;
   }
 
   tabState.port = port;
@@ -246,11 +253,11 @@ async function invokeBot(
         (token) => postBotTokenResponse(tabState, token)
       );
     } else {
-      const prompt = msg.payload.prompt;
+      const prompt = msg.payload.prompt as string;
 
       await agentService.executeAgent(
         swState.installType as "development" | "normal",
-        prompt,
+        prompt.trim(),
         tabState.vectorStore,
         tabState.botMemory,
         model,

@@ -18,11 +18,6 @@ export function CopyWebpageMarkdown(): JSX.Element {
       label="Copy webpage in markdown format"
       onClick={handleClick}
       notificationMessage="Copied to clipboard!"
-      errorMessage={
-        !webpageMarkdown
-          ? "ERROR: Webpage not copied, has not been analyzed as yet."
-          : undefined
-      }
       isLoading={clipboard.copied}
       disabled={!webpageMarkdown}
     />

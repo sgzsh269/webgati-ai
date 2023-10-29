@@ -213,8 +213,8 @@ export function Chatbot(): JSX.Element {
         <ActionList sx={{ marginTop: "8px", marginBottom: "8px" }} />
         {!webpageMarkdown && (
           <Notification mt="8px" color="orange" disallowClose>
-            Webpage not analyzed as yet for chat, click required action above to
-            do so.
+            Chat is in general mode. Webpage has not been analyzed for chat!
+            Click required action above.
           </Notification>
         )}
         <Divider />

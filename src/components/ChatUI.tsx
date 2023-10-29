@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Alert,
   Box,
@@ -42,6 +42,7 @@ export const ChatUI = ({
   stopPromptProcessing,
 }: ChatUIProps): JSX.Element => {
   const formRef = useRef<HTMLFormElement>(null);
+  const [showLoader, setShowLoader] = useState(false);
   const { scrollIntoView, scrollableRef, targetRef } =
     useScrollIntoView<HTMLDivElement>({
       offset: 60,
@@ -58,14 +59,27 @@ export const ChatUI = ({
   });
 
   useEffect(() => {
+    if (messages.length === 0) return;
+
+    setShowLoader(true);
     scrollIntoView();
   }, [messages, scrollIntoView]);
+
+  useEffect(() => {
+    if (showLoader) {
+      scrollIntoView();
+    }
+  }, [showLoader, scrollIntoView]);
 
   const handleEnterKey = (event: KeyboardEvent) => {
     event.preventDefault();
     form.validate();
     formRef.current?.requestSubmit();
   };
+
+  useEffect(() => {
+    setShowLoader(isLoading);
+  }, [isLoading]);
 
   const handleFormSubmit = async (values: { question: string }) => {
     form.reset();
@@ -122,7 +136,7 @@ export const ChatUI = ({
             content={messages[messages.length - 1].content}
           />
         )}
-        {isLoading && (
+        {showLoader && (
           <Box sx={{ textAlign: "center" }} ref={targetRef}>
             <Loader variant="dots" mb="8px" />{" "}
           </Box>
