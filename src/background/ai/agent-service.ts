@@ -14,7 +14,6 @@ const retrieverInputSchema = z.object({
     .describe(
       "Rephrased query with importants details included from conversation history"
     ),
-  entity: z.string().describe("The main entity in the input"),
 });
 class AgentService {
   getRetrievalChainTool(
