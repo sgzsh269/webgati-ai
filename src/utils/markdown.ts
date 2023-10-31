@@ -36,9 +36,9 @@ export function convertPageToMarkdown(
   const turndownFilter = generateTurndownFilter();
 
   if (type === "summary") {
-    const elements = jquery(
-      "h1, h2, h3, p, li:not(:has(a)), table, a:not(nav a), div"
-    );
+    // Choose elements relevant for summary
+    jquery("div#onetrust-consent-sdk").remove();
+    const elements = jquery("h1, h2, p, li:not(:has(a)), table, div");
     let filteredHtml = "";
     elements.each(function (this: HTMLElement) {
       if (
@@ -47,7 +47,6 @@ export function convertPageToMarkdown(
       ) {
         return;
       }
-
       filteredHtml += this.outerHTML;
     });
 
