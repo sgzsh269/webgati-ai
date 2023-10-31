@@ -250,7 +250,7 @@ async function invokeBot(
 
       await agentService.executeAgent(
         swState.installType as "development" | "normal",
-        prompt.trim(),
+        prompt.trim().replace('"', "'"),
         tabState.vectorStore,
         tabState.botMemory,
         model,

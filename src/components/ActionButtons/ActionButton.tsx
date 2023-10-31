@@ -59,7 +59,7 @@ export function ActionButton({
       </Button>
       {showNotification && (
         <Notification
-          color={errorMessage ? "red" : "teal"}
+          color={errorMessage ? "red" : color}
           onClose={closeNotification}
         >
           {errorMessage || notificationMessage}
