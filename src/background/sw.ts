@@ -65,10 +65,6 @@ chrome.action.onClicked.addListener(async function (tab) {
 });
 
 /// TAB EVENTS
-chrome.tabs.onCreated.addListener(function (tab) {
-  initTabState(tab.id as number);
-});
-
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo) {
   // Re-init tab state when url changes or page is refreshed
   // When page is refreshed, only 'favIconUrl' field gets updated
@@ -80,24 +76,20 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo) {
       return;
     }
 
-    const tabState = swState.tabIdStateMap[tabId];
+    const oldTabState = swState.tabIdStateMap[tabId];
 
     let oldUrl = "";
-    if (tabState) {
-      oldUrl = tabState.url!;
-      tabState.port?.disconnect();
+    if (oldTabState) {
+      oldUrl = oldTabState.url!;
+      oldTabState.port?.disconnect();
       delete swState.tabIdStateMap[tabId];
     }
 
-    initTabState(tabId);
-
-    const newTabState = swState.tabIdStateMap[tabId] as TabState;
+    initTabState(tabId, changeInfo.url || oldUrl);
 
     if (changeInfo.url) {
-      newTabState.url = changeInfo.url;
       sendUrlChangeMessage(changeInfo.url);
     } else {
-      newTabState.url = oldUrl;
       sendUrlChangeMessage(oldUrl!);
     }
   }
@@ -145,11 +137,12 @@ chrome.runtime.onConnect.addListener(function (port) {
     return;
   }
   const tabId = parseInt(port.name.split("-")[1]);
+  const sender = port.sender;
 
-  const tabState = swState.tabIdStateMap[tabId] as TabState;
-
+  let tabState = swState.tabIdStateMap[tabId] as TabState;
   if (!tabState) {
-    console.log("Unexpected error: tabState not found");
+    initTabState(tabId, sender!.url!);
+    tabState = swState.tabIdStateMap[tabId] as TabState;
     return;
   }
 
@@ -195,10 +188,10 @@ async function indexWebpage(tabId: number, url: string, message: any) {
   );
 }
 
-async function initTabState(tabId: number) {
+async function initTabState(tabId: number, url: string) {
   swState.tabIdStateMap[tabId] = {
     tabId,
-    url: null,
+    url,
     botAbortController: null,
     botMemory: null,
     vectorStore: null,
@@ -257,7 +250,7 @@ async function invokeBot(
 
       await agentService.executeAgent(
         swState.installType as "development" | "normal",
-        prompt.trim(),
+        prompt.trim().replace('"', "'"),
         tabState.vectorStore,
         tabState.botMemory,
         model,

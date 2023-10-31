@@ -2,7 +2,7 @@ import TurndownService, { Node } from "turndown";
 import jquery from "jquery";
 import { loadPdf } from "./pdf";
 
-function generateTurndownFilter(type: "general" | "summary") {
+function generateTurndownFilter() {
   return {
     filter: function (node: Node) {
       return (
@@ -13,8 +13,7 @@ function generateTurndownFilter(type: "general" | "summary") {
         node.nodeName === "IMG" ||
         node.nodeName === "IFRAME" ||
         node.nodeName === "CANVAS" ||
-        node.nodeName === "NOSCRIPT" ||
-        (type === "summary" && node.nodeName === "A")
+        node.nodeName === "NOSCRIPT"
       );
     },
     replacement: function () {
@@ -34,14 +33,23 @@ export function convertPageToMarkdown(
     fence: "```",
   });
 
-  const turndownFilter = generateTurndownFilter(type);
+  const turndownFilter = generateTurndownFilter();
 
   if (type === "summary") {
-    const elements = jquery("p, h1, h2, h3");
+    // Choose elements relevant for summary
+    jquery("div#onetrust-consent-sdk").remove();
+    const elements = jquery("h1, h2, p, li:not(:has(a)), table, div");
     let filteredHtml = "";
     elements.each(function (this: HTMLElement) {
+      if (
+        this.nodeName === "DIV" &&
+        jquery(this).find("*").not("span").length !== 0
+      ) {
+        return;
+      }
       filteredHtml += this.outerHTML;
     });
+
     turndownService.addRule("", turndownFilter);
     return turndownService.turndown(filteredHtml);
   } else {

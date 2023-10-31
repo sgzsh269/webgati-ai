@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { ActionButton } from "./ActionButton";
 import { useContext } from "react";
 import { AppContext } from "../../utils/app-context";
@@ -7,8 +7,10 @@ import { generatePageMarkdown } from "../../utils/markdown";
 
 export function SummarizeWebPage(): JSX.Element {
   const { swPort, webpageMarkdown } = useContext(AppContext);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleClick = async () => {
+    setIsLoading(true);
     const markdownContent = await generatePageMarkdown("summary");
 
     swPort?.postMessage({
@@ -17,14 +19,15 @@ export function SummarizeWebPage(): JSX.Element {
         markdownContent,
       },
     });
+    setIsLoading(false);
   };
 
   return (
     <ActionButton
       label={`Summarize Web Page`}
       onClick={handleClick}
-      notificationMessage=""
-      isLoading={false}
+      notificationMessage="Summarizing..."
+      isLoading={isLoading}
       color="blue"
       disabled={!webpageMarkdown}
     />

@@ -1,5 +1,7 @@
 # Webgati AI
 
+[![Chrome Web Store](https://storage.googleapis.com/web-dev-uploads/image/WlD8wC6g8khYWPJUsQceQkhXSlv1/UV4C4ybeBTsZt43U4xis.png)](https://chrome.google.com/webstore/detail/webgati-ai/hcjdidnekngphjgllgajgebadfcapdkk)
+
 **NOTE**: This AI-powered extension is under active development, please verify the results as necessary and provide feedback to help us improve.
 
 Webgati AI is a Chrome extension for interactive web browsing. Whether you're researching, studying, or just exploring diverse content, Webgati AI is designed to efficiently guide you through webpages by providing quick summaries and answers directly from the content.
