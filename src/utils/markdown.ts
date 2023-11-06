@@ -37,8 +37,12 @@ export function convertPageToMarkdown(
 
   if (type === "summary") {
     // Choose elements relevant for summary
-    jquery("div#onetrust-consent-sdk").remove();
-    const elements = jquery("h1, h2, p, li:not(:has(a)), table, div");
+    const clonedDOM = jquery("body").clone();
+    clonedDOM.remove();
+    const elements = jquery(
+      "h1, h2, p, li:not(:has(a)), table, div",
+      clonedDOM
+    );
     let filteredHtml = "";
     elements.each(function (this: HTMLElement) {
       if (

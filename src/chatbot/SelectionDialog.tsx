@@ -52,18 +52,16 @@ export function renderSelectionDialog(
   });
 
   ReactDOM.createRoot(selectionDialogShadowRootDiv).render(
-    <React.StrictMode>
-      <MantineProvider
-        theme={globalTheme}
-        emotionCache={selectionMenuMantineCache}
-      >
-        <SelectionDialog
-          selection={selection}
-          onSubmit={onSubmit}
-          onClose={onClose}
-        />
-      </MantineProvider>
-    </React.StrictMode>
+    <MantineProvider
+      theme={globalTheme}
+      emotionCache={selectionMenuMantineCache}
+    >
+      <SelectionDialog
+        selection={selection}
+        onSubmit={onSubmit}
+        onClose={onClose}
+      />
+    </MantineProvider>
   );
 }
 
