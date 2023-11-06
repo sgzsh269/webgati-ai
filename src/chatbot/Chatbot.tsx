@@ -56,6 +56,12 @@ export function Chatbot(): JSX.Element {
 
   useEffect(() => {
     init();
+  }, []);
+
+  useEffect(() => {
+    if (url) {
+      init();
+    }
   }, [url]);
 
   const analyzeWebpage = async () => {

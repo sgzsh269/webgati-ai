@@ -28,9 +28,7 @@ const emotionCache = createEmotionCache({
 });
 
 ReactDOM.createRoot(shadowRootDiv).render(
-  <React.StrictMode>
-    <MantineProvider theme={globalTheme} emotionCache={emotionCache}>
-      <Chatbot />
-    </MantineProvider>
-  </React.StrictMode>
+  <MantineProvider theme={globalTheme} emotionCache={emotionCache}>
+    <Chatbot />
+  </MantineProvider>
 );
