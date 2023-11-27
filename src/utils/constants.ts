@@ -29,3 +29,4 @@ export const MSG_TYPE_BOT_TOKEN_RESPONSE = "bot-token-response";
 export const MSG_TYPE_BOT_DONE = "bot-done";
 export const MSG_TYPE_BOT_STOP = "bot-stop";
 export const MSG_TYPE_BOT_CLEAR_MEMORY = "bot-clear-memory";
+export const MSG_TYPE_KEEP_ALIVE = "keep-alive";

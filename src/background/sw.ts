@@ -14,6 +14,7 @@ import {
   MSG_TYPE_SUMMARIZE_WEBPAGE,
   MSG_TYPE_URL_CHANGE,
   STORAGE_FIELD_AI_MODEL_CONFIG,
+  MSG_TYPE_KEEP_ALIVE,
 } from "../utils/constants";
 import { InstallType, SWState, TabState } from "../utils/types";
 import { executeSummarizer } from "./ai/summarizer";
@@ -124,9 +125,12 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
     case MSG_TYPE_GET_TAB_ID:
       sendResponse(tabId);
       break;
+    case MSG_TYPE_KEEP_ALIVE:
+      sendResponse("OK");
+      break;
     default:
       console.log(
-        `Message type not implemented for message listnener: ${messageType}`
+        `Message type not implemented for chrome.runtime.onMessage listnener: ${messageType}`
       );
   }
   return true;
