@@ -3,10 +3,11 @@ import {
   MSG_TYPE_BOT_DONE,
   MSG_TYPE_BOT_PROCESSING,
   MSG_TYPE_BOT_TOKEN_RESPONSE,
+  MSG_TYPE_KEEP_ALIVE,
 } from "../constants";
 import { SWMessage, SWMessagePayloadToken } from "../types";
 
-const SW_CONNECTION_INTERVAL = 3 * 60 * 1000;
+const SW_CONNECTION_INTERVAL = 15 * 1000;
 
 export function useSWMessaging(
   tabId: number | null,
@@ -24,7 +25,7 @@ export function useSWMessaging(
       return;
     }
 
-    let swConnectionInterval: NodeJS.Timeout | null = null;
+    let swKeepAliveInterval: NodeJS.Timeout | null = null;
     let port: chrome.runtime.Port | null = null;
 
     const connectToSW = () => {
@@ -42,17 +43,17 @@ export function useSWMessaging(
       setSWPort(port);
     };
 
-    const startSWConnInterval = () => {
-      swConnectionInterval = setInterval(() => {
-        // Reconnect to SW every 3 minutes to keep it active active by extending its timeout, ref: https://stackoverflow.com/a/73208288/4869023
-        connectToSW();
+    const startSWKeepAliveInterval = () => {
+      swKeepAliveInterval = setInterval(() => {
+        // Send keep alive message every 15 sec to reset service worker's 30 sec idle timer, ref: https://developer.chrome.com/blog/longer-esw-lifetimes/
+        swKeepAlive();
       }, SW_CONNECTION_INTERVAL);
     };
 
-    const stopSWConnInterval = () => {
-      if (swConnectionInterval) {
-        clearInterval(swConnectionInterval);
-        swConnectionInterval = null;
+    const stopSWKeepAliveInterval = () => {
+      if (swKeepAliveInterval) {
+        clearInterval(swKeepAliveInterval);
+        swKeepAliveInterval = null;
       }
     };
 
@@ -77,17 +78,21 @@ export function useSWMessaging(
       }
     };
 
+    const swKeepAlive = async () => {
+      await chrome.runtime.sendMessage({ type: MSG_TYPE_KEEP_ALIVE });
+    };
+
     const handleDisconnect = () => {
       connectToSW();
     };
 
     connectToSW();
-    startSWConnInterval();
+    startSWKeepAliveInterval();
 
     return () => {
       port?.onMessage.removeListener(handleMessage);
       port?.disconnect();
-      stopSWConnInterval();
+      stopSWKeepAliveInterval();
     };
   }, [tabId, url, onPayload]);
 
