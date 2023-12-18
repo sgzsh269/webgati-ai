@@ -9,6 +9,7 @@ import {
   Stack,
   Text,
   Group,
+  SegmentedControl,
 } from "@mantine/core";
 import { QuestionTextArea } from "./QuestionTextArea";
 import { useEffect, useRef } from "react";
@@ -16,7 +17,7 @@ import { useForm } from "@mantine/form";
 import { Message } from "../chatbot/Message";
 import { useScrollIntoView } from "@mantine/hooks";
 import { handleSettingsClick } from "../utils/ui";
-import { ModelProvider } from "../utils/types";
+import { ModelProvider, QueryMode } from "../utils/types";
 
 interface ChatUIProps {
   messages: { role: "user" | "ai"; content: string }[];
@@ -24,10 +25,12 @@ interface ChatUIProps {
   isLoading: boolean;
   disableInput: boolean;
   error: string;
+  queryMode: QueryMode;
   setError: (error: string) => void;
   clearChatContext: () => void;
   processUserPrompt: (prompt: string) => Promise<void>;
   stopPromptProcessing: () => void;
+  setQueryMode: (mode: QueryMode) => void;
 }
 
 export const ChatUI = ({
@@ -36,13 +39,16 @@ export const ChatUI = ({
   isLoading,
   disableInput,
   error,
+  queryMode,
   setError,
   clearChatContext,
   processUserPrompt,
   stopPromptProcessing,
+  setQueryMode,
 }: ChatUIProps): JSX.Element => {
   const formRef = useRef<HTMLFormElement>(null);
   const [showLoader, setShowLoader] = useState(false);
+
   const { scrollIntoView, scrollableRef, targetRef } =
     useScrollIntoView<HTMLDivElement>({
       offset: 60,
@@ -161,7 +167,7 @@ export const ChatUI = ({
         )}
         <form ref={formRef} onSubmit={form.onSubmit(handleFormSubmit)}>
           <Stack spacing="xs">
-            {isLoading && (
+            {isLoading ? (
               <Group position="center">
                 <Button
                   variant="outline"
@@ -171,6 +177,18 @@ export const ChatUI = ({
                   Stop
                 </Button>
               </Group>
+            ) : (
+              <SegmentedControl
+                value={queryMode}
+                onChange={setQueryMode}
+                size="sm"
+                color="blue"
+                data={[
+                  { label: "General", value: "general" },
+                  { label: "Webpage", value: "webpage-text-qa" },
+                  { label: "Screenshot", value: "webpage-vqa" },
+                ]}
+              />
             )}
             <QuestionTextArea
               form={form}

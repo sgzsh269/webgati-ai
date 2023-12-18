@@ -5,14 +5,14 @@ import {
   MSG_TYPE_BOT_TOKEN_RESPONSE,
   MSG_TYPE_KEEP_ALIVE,
 } from "../constants";
-import { SWMessage, SWMessagePayloadToken } from "../types";
+import { SWMessage, SWMessageResponsePayload } from "../types";
 
 const SW_CONNECTION_INTERVAL = 15 * 1000;
 
 export function useSWMessaging(
   tabId: number | null,
   url: string | null,
-  onPayload: (payload: SWMessagePayloadToken, error?: string) => void
+  onPayload: (payload: SWMessageResponsePayload, error?: string) => void
 ): {
   swPort: chrome.runtime.Port | null;
   isBotProcessing: boolean;
@@ -57,7 +57,7 @@ export function useSWMessaging(
       }
     };
 
-    const processTokenPayload = (payload: SWMessagePayloadToken) => {
+    const processTokenPayload = (payload: SWMessageResponsePayload) => {
       onPayload(payload);
     };
 

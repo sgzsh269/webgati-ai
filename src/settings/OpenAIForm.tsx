@@ -19,7 +19,7 @@ function Form({ form, ref }: OpenAIFormProps): JSX.Element {
     form.setFieldValue(`${STORAGE_FIELD_OPENAI}.apiKey`, openAIconfig?.apiKey);
     form.setFieldValue(
       `${STORAGE_FIELD_OPENAI}.modelName`,
-      openAIconfig?.modelName || "gpt-3.5-turbo"
+      openAIconfig?.modelName || "gpt-3.5"
     );
   };
 
@@ -60,12 +60,12 @@ function Form({ form, ref }: OpenAIFormProps): JSX.Element {
           {...form.getInputProps(`${STORAGE_FIELD_OPENAI}.modelName`)}
         >
           <Radio
-            value="gpt-3.5-turbo"
+            value="gpt-3.5"
             label="GPT-3.5 (Faster, cheaper but less capable)"
           />
           <Radio
             value="gpt-4"
-            label="GPT-4 (More capable, but slower and more expensive"
+            label="GPT-4 (More capable and includes vision, but slower and more expensive"
           />
         </Radio.Group>
       </Stack>

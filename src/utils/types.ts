@@ -18,13 +18,19 @@ import {
 } from "./constants";
 
 export type InstallType = "development" | "normal";
+export type QueryMode = "general" | "webpage-text-qa" | "webpage-vqa";
+export type BotMessageType =
+  | "agent"
+  | "docs-summarizer"
+  | "webpage-vqa"
+  | "summary";
 
 export type AppContextType = {
   swPort: chrome.runtime.Port | null;
   webpageMarkdown: string;
+  modelProvider: ModelProvider | null;
   analyzeWebpage: () => Promise<void>;
   clearChatContext: () => Promise<void>;
-  modelProvider: ModelProvider | null;
 };
 
 export type IndexedData = {
@@ -43,12 +49,6 @@ export type ChatMessage = {
   isComplete?: boolean;
 };
 
-export type SWMessagePayloadToken = {
-  token: string;
-  isEnd?: boolean;
-  error?: string;
-};
-
 export type SWMessage = {
   type:
     | typeof MSG_TYPE_TOGGLE_SIDE_PANEL
@@ -61,7 +61,19 @@ export type SWMessage = {
     | typeof MSG_TYPE_BOT_DONE
     | typeof MSG_TYPE_BOT_STOP
     | typeof MSG_TYPE_BOT_CLEAR_MEMORY;
-  payload: SWMessagePayloadToken | any;
+  payload: SWMessageResponsePayload | SWMessageRequestPayload;
+};
+
+export type SWMessageResponsePayload = {
+  token: string;
+  isEnd?: boolean;
+  error?: string;
+};
+
+export type SWMessageRequestPayload = {
+  queryMode: QueryMode;
+  prompt: string;
+  imageData?: string;
 };
 
 export type TabState = {

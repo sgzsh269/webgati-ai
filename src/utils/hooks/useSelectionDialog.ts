@@ -2,6 +2,7 @@ import { useCallback, useEffect } from "react";
 import { debounce, getSelectedTextPosition } from "../ui";
 import { SELECTION_DIALOG_ROOT_ID } from "../constants";
 import { renderSelectionDialog } from "../../chatbot/SelectionDialog";
+import { QueryMode } from "../types";
 
 const generateSelectionDialogPrompt = (
   selectedText: string,
@@ -10,7 +11,8 @@ const generateSelectionDialogPrompt = (
 
 export function useSelectionDialog(
   onUserPrompt: (prompt: string) => void,
-  selectionDebounceDelayMs: number
+  selectionDebounceDelayMs: number,
+  queryMode: QueryMode
 ): void {
   const debouncedSelectionHandler = useCallback(
     debounce(() => {
@@ -37,7 +39,9 @@ export function useSelectionDialog(
 
       closeDialog();
 
-      renderSelectionDialog(selection, handleSubmit, closeDialog);
+      if (queryMode === "general" || queryMode === "webpage-text-qa") {
+        renderSelectionDialog(selection, handleSubmit, closeDialog);
+      }
     }, selectionDebounceDelayMs),
     [onUserPrompt, selectionDebounceDelayMs]
   );

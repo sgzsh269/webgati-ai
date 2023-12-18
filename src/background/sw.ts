@@ -11,16 +11,14 @@ import {
   MSG_TYPE_BOT_STOP,
   MSG_TYPE_BOT_CLEAR_MEMORY,
   MSG_TYPE_TOGGLE_SIDE_PANEL,
-  MSG_TYPE_SUMMARIZE_WEBPAGE,
   MSG_TYPE_URL_CHANGE,
   STORAGE_FIELD_AI_MODEL_CONFIG,
   MSG_TYPE_KEEP_ALIVE,
 } from "../utils/constants";
-import { InstallType, SWState, TabState } from "../utils/types";
-import { executeSummarizer } from "./ai/summarizer";
+import { InstallType, SWMessage, SWState, TabState } from "../utils/types";
 import { modelService } from "./ai/model-service";
-import { agentService } from "./ai/agent-service";
 import { getModelProvider } from "../utils/storage";
+import { aiService } from "./ai/ai-service";
 
 const splitter = RecursiveCharacterTextSplitter.fromLanguage("markdown", {
   chunkSize: 2000,
@@ -155,10 +153,7 @@ chrome.runtime.onConnect.addListener(function (port) {
   port.onMessage.addListener(async function (msg) {
     switch (msg.type) {
       case MSG_TYPE_BOT_EXECUTE:
-        invokeBot("agent", msg, tabState);
-        break;
-      case MSG_TYPE_SUMMARIZE_WEBPAGE:
-        invokeBot("docs-summarizer", msg, tabState);
+        invokeBot(msg, tabState);
         break;
       case MSG_TYPE_BOT_STOP:
         stopBot(tabId);
@@ -204,15 +199,9 @@ async function initTabState(tabId: number, url: string) {
   };
 }
 
-async function invokeBot(
-  type: "agent" | "docs-summarizer",
-  msg: any,
-  tabState: TabState
-) {
+async function invokeBot(msg: SWMessage, tabState: TabState) {
   try {
     postBotProcessing(tabState);
-
-    const model = modelService.getCurrentLLM();
 
     if (!tabState.vectorStore) {
       tabState.vectorStore = await MemoryVectorStore.fromDocuments(
@@ -225,8 +214,6 @@ async function invokeBot(
       tabState.botMemory = new ConversationSummaryBufferMemory({
         llm: modelService.getOpenAI3Turbo(),
         maxTokenLimit: 500,
-        memoryKey: "chat_history",
-        outputKey: "output",
         returnMessages: true,
       });
     }
@@ -235,33 +222,14 @@ async function invokeBot(
       tabState.botAbortController = new AbortController();
     }
 
-    if (type === "docs-summarizer") {
-      const markdownContent = msg.payload.markdownContent;
-      if (!markdownContent) {
-        postBotTokenResponse(tabState, "No valid content to summarize");
-        return;
-      }
-
-      await executeSummarizer(
-        markdownContent,
-        tabState.botMemory,
-        model,
-        tabState.botAbortController,
-        (token) => postBotTokenResponse(tabState, token)
-      );
-    } else {
-      const prompt = msg.payload.prompt as string;
-
-      await agentService.executeAgent(
-        swState.installType as "development" | "normal",
-        prompt.trim().replace('"', "'"),
-        tabState.vectorStore,
-        tabState.botMemory,
-        model,
-        tabState.botAbortController,
-        (token) => postBotTokenResponse(tabState, token)
-      );
-    }
+    await aiService.execute(
+      swState.installType as "development" | "normal",
+      msg,
+      tabState.vectorStore,
+      tabState.botMemory,
+      tabState.botAbortController,
+      (token) => postBotTokenResponse(tabState, token)
+    );
   } catch (error: any) {
     if (error.message !== "AbortError") {
       console.log(error);

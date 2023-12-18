@@ -23,13 +23,15 @@ import {
 } from "../utils/hooks";
 import {
   ChatMessage,
-  SWMessagePayloadToken,
+  SWMessageResponsePayload,
   ModelProvider,
+  QueryMode,
 } from "../utils/types";
 import { IconSettings, IconX } from "@tabler/icons-react";
 import { Logo } from "../components/Logo";
 import { handleSettingsClick } from "../utils/ui";
 import { useStorageOnChanged } from "../utils/hooks/useStorageOnChanged";
+import html2canvas from "html2canvas";
 
 const SELECTION_DEBOUNCE_DELAY_MS = 800;
 
@@ -42,13 +44,18 @@ export function Chatbot(): JSX.Element {
   const [webpageMarkdown, setWebpageMarkdown] = useState("");
   const [tabId, setTabId] = useState<number | null>(null);
   const [url, setUrl] = useState<string | null>(null);
+  const [queryMode, setQueryMode] = useState<QueryMode>("general");
 
   const { showSidePanel, setShowSidePanel } = useToggleSidePanel();
 
-  useSelectionDialog((prompt) => {
-    setShowSidePanel(true);
-    processUserPrompt(prompt);
-  }, SELECTION_DEBOUNCE_DELAY_MS);
+  useSelectionDialog(
+    (prompt) => {
+      setShowSidePanel(true);
+      processUserPrompt(prompt);
+    },
+    SELECTION_DEBOUNCE_DELAY_MS,
+    queryMode
+  );
 
   useChromeTabUrlChange((url) => {
     setUrl(url);
@@ -79,16 +86,41 @@ export function Chatbot(): JSX.Element {
   const processUserPrompt = async (prompt: string) => {
     setMessages((messages) => [...messages, { role: "user", content: prompt }]);
 
-    swPort?.postMessage({
-      type: MSG_TYPE_BOT_EXECUTE,
-      payload: {
-        origin: "general",
-        prompt,
-      },
-    });
+    if (queryMode === "webpage-text-qa") {
+      if (!webpageMarkdown) {
+        await analyzeWebpage();
+      }
+    }
+
+    if (queryMode === "webpage-vqa") {
+      takeWebpageScreenshot().then((imageData) => {
+        swPort?.postMessage({
+          type: MSG_TYPE_BOT_EXECUTE,
+          payload: {
+            queryMode,
+            prompt,
+            imageData,
+          },
+        });
+      });
+    } else {
+      swPort?.postMessage({
+        type: MSG_TYPE_BOT_EXECUTE,
+        payload: {
+          queryMode,
+          prompt,
+        },
+      });
+    }
   };
 
-  const processToken = (payload: SWMessagePayloadToken) => {
+  const takeWebpageScreenshot = async () => {
+    const canvas = await html2canvas(document.body, { useCORS: true });
+    const imgData = canvas.toDataURL("image/jpeg");
+    return imgData;
+  };
+
+  const processToken = (payload: SWMessageResponsePayload) => {
     setMessages((messages) => {
       const lastMessage = messages[messages.length - 1];
       const prevMessages = messages.slice(0, messages.length - 1);
@@ -119,7 +151,7 @@ export function Chatbot(): JSX.Element {
   };
 
   const handleBotMessagePayload = useCallback(
-    (payload: SWMessagePayloadToken) => {
+    (payload: SWMessageResponsePayload) => {
       if (payload.error) {
         setError(payload.error);
       } else {
@@ -216,13 +248,10 @@ export function Chatbot(): JSX.Element {
             <IconX size="24px" onClick={handleCloseClick} />
           </ActionIcon>
         </Group>
-        <ActionList sx={{ marginTop: "8px", marginBottom: "8px" }} />
-        {!webpageMarkdown && (
-          <Notification mt="8px" color="orange" disallowClose>
-            Chat is in general mode. Webpage has not been analyzed for chat!
-            Click required action above.
-          </Notification>
-        )}
+        <ActionList
+          queryMode={queryMode}
+          sx={{ marginTop: "8px", marginBottom: "8px" }}
+        />
         <Divider />
         <ChatUI
           messages={messages}
@@ -234,6 +263,8 @@ export function Chatbot(): JSX.Element {
           clearChatContext={clearChatContext}
           processUserPrompt={processUserPrompt}
           stopPromptProcessing={handleStopPromptProcessing}
+          queryMode={queryMode}
+          setQueryMode={setQueryMode}
         />
       </Paper>
     </AppContext.Provider>

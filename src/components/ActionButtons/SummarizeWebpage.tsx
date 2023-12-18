@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { ActionButton } from "./ActionButton";
 import { useContext } from "react";
 import { AppContext } from "../../utils/app-context";
-import { MSG_TYPE_SUMMARIZE_WEBPAGE } from "../../utils/constants";
+import { MSG_TYPE_BOT_EXECUTE } from "../../utils/constants";
 import { generatePageMarkdown } from "../../utils/markdown";
 
 export function SummarizeWebPage(): JSX.Element {
@@ -14,8 +14,9 @@ export function SummarizeWebPage(): JSX.Element {
     const markdownContent = await generatePageMarkdown("summary");
 
     swPort?.postMessage({
-      type: MSG_TYPE_SUMMARIZE_WEBPAGE,
+      type: MSG_TYPE_BOT_EXECUTE,
       payload: {
+        queryMode: "summary",
         markdownContent,
       },
     });
@@ -29,7 +30,6 @@ export function SummarizeWebPage(): JSX.Element {
       notificationMessage="Summarizing..."
       isLoading={isLoading}
       color="blue"
-      disabled={!webpageMarkdown}
     />
   );
 }
