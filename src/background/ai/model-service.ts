@@ -1,11 +1,6 @@
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
 import { getModelProvider, getModelProviderConfig } from "../../utils/storage";
-import {
-  BotMessageType,
-  ModelProvider,
-  OpenAIConfig,
-  QueryMode,
-} from "../../utils/types";
+import { ModelProvider, OpenAIConfig, QueryMode } from "../../utils/types";
 import { ChatOpenAI } from "langchain/chat_models/openai";
 
 const MAX_RETRIES = 3;

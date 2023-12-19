@@ -133,18 +133,21 @@ export const ChatUI = ({
         sx={{ flex: 1, overflow: "scroll" }}
         ref={scrollableRef}
       >
-        {messages.slice(0, -1).map((message, index) => (
-          <Message key={index} role={message.role} content={message.content} />
-        ))}
-        {messages.length > 0 && (
-          <Message
-            role={messages[messages.length - 1].role}
-            content={messages[messages.length - 1].content}
-          />
-        )}
+        {messages.map((message, index) => {
+          if (!message.content) {
+            return null;
+          }
+          return (
+            <Message
+              key={index}
+              role={message.role}
+              content={message.content}
+            />
+          );
+        })}
         {showLoader && (
           <Box sx={{ textAlign: "center" }} ref={targetRef}>
-            <Loader variant="dots" mb="8px" />{" "}
+            <Loader variant="dots" mb="8px" />
           </Box>
         )}
       </Stack>

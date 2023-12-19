@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { MSG_TYPE_TOGGLE_SIDE_PANEL } from "../constants";
+import { SWMessage } from "../types";
 
 export function useToggleSidePanel(): {
   showSidePanel: boolean;
@@ -8,8 +8,8 @@ export function useToggleSidePanel(): {
   const [showSidePanel, setShowSidePanel] = useState<boolean>(false);
 
   useEffect(() => {
-    const handleMessage = (message: any) => {
-      if (message.type === MSG_TYPE_TOGGLE_SIDE_PANEL) {
+    const handleMessage = (message: SWMessage) => {
+      if (message.type === "toggle-side-panel") {
         setShowSidePanel((prevDisplay) => !prevDisplay);
       }
     };

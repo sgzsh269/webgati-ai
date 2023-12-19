@@ -1,24 +1,23 @@
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
 import { ConversationSummaryBufferMemory } from "langchain/memory";
+
 import {
-  MSG_TYPE_BOT_DONE,
-  MSG_TYPE_BOT_PROCESSING,
-  MSG_TYPE_BOT_TOKEN_RESPONSE,
-  MSG_TYPE_BOT_EXECUTE,
-  MSG_TYPE_GET_TAB_ID,
-  MSG_TYPE_INDEX_WEBPAGE,
-  MSG_TYPE_BOT_STOP,
-  MSG_TYPE_BOT_CLEAR_MEMORY,
-  MSG_TYPE_TOGGLE_SIDE_PANEL,
-  MSG_TYPE_URL_CHANGE,
-  STORAGE_FIELD_AI_MODEL_CONFIG,
-  MSG_TYPE_KEEP_ALIVE,
-} from "../utils/constants";
-import { InstallType, SWMessage, SWState, TabState } from "../utils/types";
+  InstallType,
+  SWMessage,
+  SWMessageBotDone,
+  SWMessageBotExecute,
+  SWMessageBotProcessing,
+  SWMessageBotTokenResponse,
+  SWMessageToggleSidePanel,
+  SWMessageUrlChange,
+  SWState,
+  TabState,
+} from "../utils/types";
 import { modelService } from "./ai/model-service";
 import { getModelProvider } from "../utils/storage";
 import { aiService } from "./ai/ai-service";
+import { STORAGE_FIELD_AI_MODEL_CONFIG } from "../utils/constants";
 
 const splitter = RecursiveCharacterTextSplitter.fromLanguage("markdown", {
   chunkSize: 2000,
@@ -54,8 +53,8 @@ chrome.storage.local.onChanged.addListener(function (changes) {
 chrome.action.onClicked.addListener(async function (tab) {
   try {
     if (tab.id) {
-      await chrome.tabs.sendMessage(tab.id, {
-        type: MSG_TYPE_TOGGLE_SIDE_PANEL,
+      await chrome.tabs.sendMessage<SWMessageToggleSidePanel>(tab.id, {
+        type: "toggle-side-panel",
       });
     }
   } catch (error: any) {
@@ -101,13 +100,17 @@ chrome.tabs.onRemoved.addListener(function (tabId) {
 
 /// MESSAGE EVENTS
 
-chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
+chrome.runtime.onMessage.addListener(function (
+  message: SWMessage,
+  sender,
+  sendResponse
+) {
   const tabId = sender.tab?.id as number;
   const url = sender.tab?.url as string;
   const messageType = message.type;
 
   switch (message.type) {
-    case MSG_TYPE_INDEX_WEBPAGE:
+    case "index-webpage":
       indexWebpage(tabId, url, message)
         .then(() =>
           sendResponse({
@@ -120,10 +123,10 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
           })
         );
       break;
-    case MSG_TYPE_GET_TAB_ID:
+    case "get-tab-id":
       sendResponse(tabId);
       break;
-    case MSG_TYPE_KEEP_ALIVE:
+    case "keep-alive":
       sendResponse("OK");
       break;
     default:
@@ -150,15 +153,15 @@ chrome.runtime.onConnect.addListener(function (port) {
 
   tabState.port = port;
 
-  port.onMessage.addListener(async function (msg) {
+  port.onMessage.addListener(async function (msg: SWMessage) {
     switch (msg.type) {
-      case MSG_TYPE_BOT_EXECUTE:
+      case "bot-execute":
         invokeBot(msg, tabState);
         break;
-      case MSG_TYPE_BOT_STOP:
+      case "bot-stop":
         stopBot(tabId);
         break;
-      case MSG_TYPE_BOT_CLEAR_MEMORY:
+      case "bot-clear-memory":
         clearBotMemory(tabState);
         break;
       default:
@@ -199,7 +202,7 @@ async function initTabState(tabId: number, url: string) {
   };
 }
 
-async function invokeBot(msg: SWMessage, tabState: TabState) {
+async function invokeBot(msg: SWMessageBotExecute, tabState: TabState) {
   try {
     postBotProcessing(tabState);
 
@@ -252,32 +255,32 @@ function stopBot(tabId: number) {
 
 function postBotProcessing(tabState: TabState) {
   tabState.port?.postMessage({
-    type: MSG_TYPE_BOT_PROCESSING,
-  });
+    type: "bot-processing",
+  } as SWMessageBotProcessing);
 }
 
 function postBotTokenResponse(tabState: TabState, token: string) {
   tabState.port?.postMessage({
-    type: MSG_TYPE_BOT_TOKEN_RESPONSE,
+    type: "bot-token-response",
     payload: {
       token,
     },
-  });
+  } as SWMessageBotTokenResponse);
 }
 
 function postBotError(tabState: TabState, error: string) {
   tabState.port?.postMessage({
-    type: MSG_TYPE_BOT_TOKEN_RESPONSE,
+    type: "bot-token-response",
     payload: {
       error,
     },
-  });
+  } as SWMessageBotTokenResponse);
 }
 
 function postBotDone(tabState: TabState) {
   tabState.port?.postMessage({
-    type: MSG_TYPE_BOT_DONE,
-  });
+    type: "bot-done",
+  } as SWMessageBotDone);
 }
 
 function clearBotMemory(tabState: TabState) {
@@ -290,8 +293,8 @@ function sendUrlChangeMessage(url: string) {
       const activeTabId = tabs[0].id;
 
       if (activeTabId) {
-        await chrome.tabs.sendMessage(activeTabId, {
-          type: MSG_TYPE_URL_CHANGE,
+        await chrome.tabs.sendMessage<SWMessageUrlChange>(activeTabId, {
+          type: "url-change",
           payload: { url },
         });
       }

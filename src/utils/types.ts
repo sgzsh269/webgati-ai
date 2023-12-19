@@ -3,22 +3,17 @@ import { ConversationSummaryBufferMemory } from "langchain/memory";
 import { VectorStore } from "langchain/vectorstores/base";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
 import {
-  MSG_TYPE_BOT_CLEAR_MEMORY,
-  MSG_TYPE_BOT_DONE,
-  MSG_TYPE_BOT_EXECUTE,
-  MSG_TYPE_BOT_PROCESSING,
-  MSG_TYPE_BOT_STOP,
-  MSG_TYPE_BOT_TOKEN_RESPONSE,
-  MSG_TYPE_GET_TAB_ID,
-  MSG_TYPE_INDEX_WEBPAGE,
-  MSG_TYPE_TOGGLE_SIDE_PANEL,
-  MSG_TYPE_URL_CHANGE,
   STORAGE_FIELD_MODEL_PROVIDER,
   STORAGE_FIELD_OPENAI,
 } from "./constants";
 
 export type InstallType = "development" | "normal";
-export type QueryMode = "general" | "webpage-text-qa" | "webpage-vqa";
+export type QueryMode =
+  | SWMessagePayloadGeneral["queryMode"]
+  | SWMessagePayloadWebpageTextQA["queryMode"]
+  | SWMessagePayloadWebpageVQA["queryMode"]
+  | SWMessagePayloadSummary["queryMode"];
+
 export type BotMessageType =
   | "agent"
   | "docs-summarizer"
@@ -49,32 +44,98 @@ export type ChatMessage = {
   isComplete?: boolean;
 };
 
-export type SWMessage = {
-  type:
-    | typeof MSG_TYPE_TOGGLE_SIDE_PANEL
-    | typeof MSG_TYPE_URL_CHANGE
-    | typeof MSG_TYPE_GET_TAB_ID
-    | typeof MSG_TYPE_INDEX_WEBPAGE
-    | typeof MSG_TYPE_BOT_EXECUTE
-    | typeof MSG_TYPE_BOT_PROCESSING
-    | typeof MSG_TYPE_BOT_TOKEN_RESPONSE
-    | typeof MSG_TYPE_BOT_DONE
-    | typeof MSG_TYPE_BOT_STOP
-    | typeof MSG_TYPE_BOT_CLEAR_MEMORY;
-  payload: SWMessageResponsePayload | SWMessageRequestPayload;
+export type SWMessageToggleSidePanel = {
+  type: "toggle-side-panel";
 };
 
-export type SWMessageResponsePayload = {
-  token: string;
-  isEnd?: boolean;
-  error?: string;
+export type SWMessageUrlChange = {
+  type: "url-change";
+  payload: {
+    url: string;
+  };
 };
 
-export type SWMessageRequestPayload = {
-  queryMode: QueryMode;
+export type SWMessageGetTabId = {
+  type: "get-tab-id";
+};
+
+export type SWMessageIndexWebpage = {
+  type: "index-webpage";
+  payload: {
+    pageMarkdown: string;
+  };
+};
+
+export type SWMessageBotExecute = {
+  type: "bot-execute";
+  payload:
+    | SWMessagePayloadGeneral
+    | SWMessagePayloadWebpageTextQA
+    | SWMessagePayloadWebpageVQA
+    | SWMessagePayloadSummary;
+};
+
+export type SWMessageBotProcessing = {
+  type: "bot-processing";
+};
+
+export type SWMessageBotTokenResponse = {
+  type: "bot-token-response";
+  payload: {
+    token: string;
+    error?: string;
+  };
+};
+
+export type SWMessageBotDone = {
+  type: "bot-done";
+};
+
+export type SWMessageBotStop = {
+  type: "bot-stop";
+};
+
+export type SWMessageBotClearMemory = {
+  type: "bot-clear-memory";
+};
+
+export type SWMessageKeepAlive = {
+  type: "keep-alive";
+};
+
+export type SWMessagePayloadGeneral = {
+  queryMode: "general";
   prompt: string;
-  imageData?: string;
 };
+
+export type SWMessagePayloadWebpageTextQA = {
+  queryMode: "webpage-text-qa";
+  prompt: string;
+};
+
+export type SWMessagePayloadWebpageVQA = {
+  queryMode: "webpage-vqa";
+  prompt: string;
+  imageData: string;
+};
+
+export type SWMessagePayloadSummary = {
+  queryMode: "summary";
+  markdownContent: string;
+};
+
+export type SWMessage =
+  | SWMessageToggleSidePanel
+  | SWMessageUrlChange
+  | SWMessageGetTabId
+  | SWMessageIndexWebpage
+  | SWMessageBotExecute
+  | SWMessageBotProcessing
+  | SWMessageBotTokenResponse
+  | SWMessageBotDone
+  | SWMessageBotStop
+  | SWMessageBotClearMemory
+  | SWMessageKeepAlive;
 
 export type TabState = {
   tabId: number;

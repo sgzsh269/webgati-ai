@@ -1,7 +1,7 @@
 import { ModelService, modelService } from "./model-service";
 import { ConversationSummaryBufferMemory } from "langchain/memory";
 import { VectorStore } from "langchain/vectorstores/base";
-import { SWMessage } from "../../utils/types";
+import { SWMessageBotExecute } from "../../utils/types";
 import { executeWebpageSummary } from "./webpage-summary";
 import { executeWebpageRAG } from "./webpage-rag";
 import { executeGeneralChat } from "./general-chat";
@@ -16,14 +16,13 @@ class AIService {
 
   async execute(
     installType: "development" | "normal",
-    msg: SWMessage,
+    msg: SWMessageBotExecute,
     vectorStore: VectorStore,
     memory: ConversationSummaryBufferMemory,
     abortController: AbortController,
     handleNewTokenCallback: (token: string) => void
   ) {
     const queryMode = msg.payload.queryMode;
-    const prompt = msg.payload.prompt;
 
     const currentModel = this.modelService.getCurrentLLM(queryMode);
     const fasterModel = this.modelService.getOpenAI3Turbo();
@@ -32,7 +31,7 @@ class AIService {
       await executeGeneralChat(
         currentModel,
         memory,
-        prompt,
+        msg.payload.prompt,
         abortController,
         handleNewTokenCallback
       );
@@ -42,13 +41,13 @@ class AIService {
         currentModel,
         memory,
         vectorStore,
-        prompt,
+        msg.payload.prompt,
         abortController,
         handleNewTokenCallback
       );
     } else if (queryMode === "webpage-vqa") {
       await executeWebpageVisionChat(
-        prompt,
+        msg.payload.prompt,
         msg.payload.imageData,
         currentModel,
         abortController,

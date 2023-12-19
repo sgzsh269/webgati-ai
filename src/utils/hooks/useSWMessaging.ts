@@ -1,18 +1,19 @@
 import { useEffect, useState } from "react";
 import {
-  MSG_TYPE_BOT_DONE,
-  MSG_TYPE_BOT_PROCESSING,
-  MSG_TYPE_BOT_TOKEN_RESPONSE,
-  MSG_TYPE_KEEP_ALIVE,
-} from "../constants";
-import { SWMessage, SWMessageResponsePayload } from "../types";
+  SWMessage,
+  SWMessageBotTokenResponse,
+  SWMessageKeepAlive,
+} from "../types";
 
 const SW_CONNECTION_INTERVAL = 15 * 1000;
 
 export function useSWMessaging(
   tabId: number | null,
   url: string | null,
-  onPayload: (payload: SWMessageResponsePayload, error?: string) => void
+  onMessage: (
+    payload: SWMessageBotTokenResponse["payload"],
+    isDone: boolean
+  ) => void
 ): {
   swPort: chrome.runtime.Port | null;
   isBotProcessing: boolean;
@@ -36,6 +37,7 @@ export function useSWMessaging(
       port = chrome.runtime.connect({
         name: `tab-${tabId?.toString()}`,
       });
+
       port?.onMessage.addListener(handleMessage);
 
       port?.onDisconnect.addListener(handleDisconnect);
@@ -57,20 +59,16 @@ export function useSWMessaging(
       }
     };
 
-    const processTokenPayload = (payload: SWMessageResponsePayload) => {
-      onPayload(payload);
-    };
-
     const handleMessage = (msg: SWMessage) => {
       switch (msg.type) {
-        case MSG_TYPE_BOT_PROCESSING:
+        case "bot-processing":
           setIsBotProcessing(true);
           break;
-        case MSG_TYPE_BOT_TOKEN_RESPONSE:
-          processTokenPayload(msg.payload);
+        case "bot-token-response":
+          onMessage(msg.payload, false);
           break;
-        case MSG_TYPE_BOT_DONE:
-          processTokenPayload({ token: "", isEnd: true });
+        case "bot-done":
+          onMessage({ token: "" }, true);
           setIsBotProcessing(false);
           break;
         default:
@@ -79,7 +77,9 @@ export function useSWMessaging(
     };
 
     const swKeepAlive = async () => {
-      await chrome.runtime.sendMessage({ type: MSG_TYPE_KEEP_ALIVE });
+      await chrome.runtime.sendMessage<SWMessageKeepAlive>({
+        type: "keep-alive",
+      });
     };
 
     const handleDisconnect = () => {
@@ -94,7 +94,7 @@ export function useSWMessaging(
       port?.disconnect();
       stopSWKeepAliveInterval();
     };
-  }, [tabId, url, onPayload]);
+  }, [tabId, url, onMessage]);
 
   return { swPort, isBotProcessing };
 }

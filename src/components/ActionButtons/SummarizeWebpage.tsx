@@ -2,11 +2,11 @@ import React, { useState } from "react";
 import { ActionButton } from "./ActionButton";
 import { useContext } from "react";
 import { AppContext } from "../../utils/app-context";
-import { MSG_TYPE_BOT_EXECUTE } from "../../utils/constants";
 import { generatePageMarkdown } from "../../utils/markdown";
+import { SWMessageBotExecute } from "../../utils/types";
 
 export function SummarizeWebPage(): JSX.Element {
-  const { swPort, webpageMarkdown } = useContext(AppContext);
+  const { swPort } = useContext(AppContext);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleClick = async () => {
@@ -14,12 +14,12 @@ export function SummarizeWebPage(): JSX.Element {
     const markdownContent = await generatePageMarkdown("summary");
 
     swPort?.postMessage({
-      type: MSG_TYPE_BOT_EXECUTE,
+      type: "bot-execute",
       payload: {
         queryMode: "summary",
         markdownContent,
       },
-    });
+    } as SWMessageBotExecute);
     setIsLoading(false);
   };
 

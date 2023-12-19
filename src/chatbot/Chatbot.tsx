@@ -1,15 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 
-import { ActionIcon, Divider, Group, Notification, Paper } from "@mantine/core";
-import {
-  MSG_TYPE_BOT_STOP,
-  MSG_TYPE_BOT_EXECUTE,
-  MSG_TYPE_GET_TAB_ID,
-  MSG_TYPE_INDEX_WEBPAGE,
-  MSG_TYPE_BOT_CLEAR_MEMORY,
-  SIDE_PANEL_WIDTH,
-  STORAGE_FIELD_AI_MODEL_CONFIG,
-} from "../utils/constants";
+import { ActionIcon, Divider, Group, Paper } from "@mantine/core";
+
 import { getModelProvider } from "../utils/storage";
 import { ChatUI } from "../components/ChatUI";
 import { generatePageMarkdown } from "../utils/markdown";
@@ -23,15 +15,27 @@ import {
 } from "../utils/hooks";
 import {
   ChatMessage,
-  SWMessageResponsePayload,
   ModelProvider,
   QueryMode,
+  SWMessageBotClearMemory,
+  SWMessageBotExecute,
+  SWMessageBotStop,
+  SWMessageBotTokenResponse,
+  SWMessageGetTabId,
+  SWMessageIndexWebpage,
+  SWMessagePayloadGeneral,
+  SWMessagePayloadWebpageTextQA,
+  SWMessagePayloadWebpageVQA,
 } from "../utils/types";
 import { IconSettings, IconX } from "@tabler/icons-react";
 import { Logo } from "../components/Logo";
 import { handleSettingsClick } from "../utils/ui";
 import { useStorageOnChanged } from "../utils/hooks/useStorageOnChanged";
 import html2canvas from "html2canvas";
+import {
+  SIDE_PANEL_WIDTH,
+  STORAGE_FIELD_AI_MODEL_CONFIG,
+} from "../utils/constants";
 
 const SELECTION_DEBOUNCE_DELAY_MS = 800;
 
@@ -75,8 +79,8 @@ export function Chatbot(): JSX.Element {
     const pageMarkdown = await generatePageMarkdown("general");
     setWebpageMarkdown(pageMarkdown);
 
-    await chrome.runtime.sendMessage({
-      type: MSG_TYPE_INDEX_WEBPAGE,
+    await chrome.runtime.sendMessage<SWMessageIndexWebpage>({
+      type: "index-webpage",
       payload: {
         pageMarkdown,
       },
@@ -95,22 +99,22 @@ export function Chatbot(): JSX.Element {
     if (queryMode === "webpage-vqa") {
       takeWebpageScreenshot().then((imageData) => {
         swPort?.postMessage({
-          type: MSG_TYPE_BOT_EXECUTE,
+          type: "bot-execute",
           payload: {
             queryMode,
             prompt,
             imageData,
-          },
-        });
+          } as SWMessagePayloadWebpageVQA,
+        } as SWMessageBotExecute);
       });
     } else {
       swPort?.postMessage({
-        type: MSG_TYPE_BOT_EXECUTE,
+        type: "bot-execute",
         payload: {
           queryMode,
           prompt,
-        },
-      });
+        } as SWMessagePayloadGeneral | SWMessagePayloadWebpageTextQA,
+      } as SWMessageBotExecute);
     }
   };
 
@@ -120,7 +124,7 @@ export function Chatbot(): JSX.Element {
     return imgData;
   };
 
-  const processToken = (payload: SWMessageResponsePayload) => {
+  const processToken = (token: string, isDone: boolean) => {
     setMessages((messages) => {
       const lastMessage = messages[messages.length - 1];
       const prevMessages = messages.slice(0, messages.length - 1);
@@ -130,8 +134,8 @@ export function Chatbot(): JSX.Element {
           ...messages,
           {
             role: "ai",
-            content: payload.token,
-            isComplete: payload.isEnd,
+            content: token,
+            isComplete: isDone,
           },
         ];
       }
@@ -139,8 +143,8 @@ export function Chatbot(): JSX.Element {
         ...prevMessages,
         {
           role: "ai",
-          content: lastMessage.content + payload.token,
-          isComplete: payload.isEnd,
+          content: lastMessage.content + token,
+          isComplete: isDone,
         },
       ];
     });
@@ -151,11 +155,11 @@ export function Chatbot(): JSX.Element {
   };
 
   const handleBotMessagePayload = useCallback(
-    (payload: SWMessageResponsePayload) => {
+    (payload: SWMessageBotTokenResponse["payload"], isDone: boolean) => {
       if (payload.error) {
         setError(payload.error);
       } else {
-        processToken(payload);
+        processToken(payload.token, isDone);
       }
     },
     []
@@ -169,14 +173,14 @@ export function Chatbot(): JSX.Element {
 
   const handleStopPromptProcessing = () => {
     swPort?.postMessage({
-      type: MSG_TYPE_BOT_STOP,
-    });
+      type: "bot-stop",
+    } as SWMessageBotStop);
   };
 
   const clearChatContext = useCallback(async () => {
     swPort?.postMessage({
-      type: MSG_TYPE_BOT_CLEAR_MEMORY,
-    });
+      type: "bot-clear-memory",
+    } as SWMessageBotClearMemory);
     setMessages([]);
   }, [swPort]);
 
@@ -188,8 +192,8 @@ export function Chatbot(): JSX.Element {
 
     setModelProvider(modelProvider);
 
-    const tabId = await chrome.runtime.sendMessage({
-      type: MSG_TYPE_GET_TAB_ID,
+    const tabId = await chrome.runtime.sendMessage<SWMessageGetTabId>({
+      type: "get-tab-id",
     });
     setTabId(tabId);
   }, []);
