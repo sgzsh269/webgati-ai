@@ -6,13 +6,13 @@ import { useEffect } from "react";
 import { STORAGE_FIELD_OPENAI } from "../utils/constants";
 import { OpenAIForm } from "./OpenAIForm";
 import { ModelFormSubFormRef } from "../utils/types";
-import { getModelProvider } from "../utils/storage";
+import { readModelProvider } from "../utils/storage";
 
 export function ModelForm(): JSX.Element {
   const subFormRef = useRef<ModelFormSubFormRef>(null);
 
   const loadModelConfig = async () => {
-    const modelProvider = await getModelProvider();
+    const modelProvider = await readModelProvider();
     form.setFieldValue("modelProvider", modelProvider || STORAGE_FIELD_OPENAI);
   };
 

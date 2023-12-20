@@ -15,7 +15,7 @@ import {
   TabState,
 } from "../utils/types";
 import { modelService } from "./ai/model-service";
-import { getModelProvider } from "../utils/storage";
+import { readModelProvider } from "../utils/storage";
 import { aiService } from "./ai/ai-service";
 import { STORAGE_FIELD_AI_MODEL_CONFIG } from "../utils/constants";
 
@@ -216,7 +216,7 @@ async function invokeBot(msg: SWMessageBotExecute, tabState: TabState) {
     if (!tabState.botMemory) {
       tabState.botMemory = new ConversationSummaryBufferMemory({
         llm: modelService.getOpenAI3Turbo(),
-        maxTokenLimit: 500,
+        maxTokenLimit: 1000,
         returnMessages: true,
       });
     }
@@ -305,7 +305,7 @@ function sendUrlChangeMessage(url: string) {
 }
 
 async function init() {
-  const modelProvider = await getModelProvider();
+  const modelProvider = await readModelProvider();
   if (modelProvider) {
     await modelService.updateCurrentModelProvider();
   }

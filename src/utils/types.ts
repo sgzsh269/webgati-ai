@@ -5,6 +5,7 @@ import { MemoryVectorStore } from "langchain/vectorstores/memory";
 import {
   STORAGE_FIELD_MODEL_PROVIDER,
   STORAGE_FIELD_OPENAI,
+  SUPPORTED_MODELS,
 } from "./constants";
 
 export type InstallType = "development" | "normal";
@@ -13,6 +14,8 @@ export type QueryMode =
   | SWMessagePayloadWebpageTextQA["queryMode"]
   | SWMessagePayloadWebpageVQA["queryMode"]
   | SWMessagePayloadSummary["queryMode"];
+
+export type SupportedModel = (typeof SUPPORTED_MODELS)[number]["value"];
 
 export type BotMessageType =
   | "agent"
@@ -35,7 +38,7 @@ export type IndexedData = {
 
 export type OpenAIConfig = {
   apiKey: string;
-  modelName: string;
+  modelName: SupportedModel;
 };
 
 export type ChatMessage = {

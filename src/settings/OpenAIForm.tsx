@@ -1,10 +1,14 @@
 import React, { useImperativeHandle } from "react";
 import { Box, PasswordInput, Stack, Radio, Anchor } from "@mantine/core";
 import { useEffect } from "react";
-import { STORAGE_FIELD_OPENAI } from "../utils/constants";
+import {
+  OPENAI_MODEL_NAME_GPT3,
+  OPENAI_MODEL_NAME_GPT4,
+  STORAGE_FIELD_OPENAI,
+} from "../utils/constants";
 import { ModelFormSubFormRef } from "../utils/types";
 import {
-  getModelProviderConfig,
+  readModelProviderConfig,
   saveModelProviderConfig,
 } from "../utils/storage";
 
@@ -15,11 +19,11 @@ interface OpenAIFormProps {
 
 function Form({ form, ref }: OpenAIFormProps): JSX.Element {
   const loadOpenAiApiKey = async () => {
-    const openAIconfig = await getModelProviderConfig(STORAGE_FIELD_OPENAI);
+    const openAIconfig = await readModelProviderConfig(STORAGE_FIELD_OPENAI);
     form.setFieldValue(`${STORAGE_FIELD_OPENAI}.apiKey`, openAIconfig?.apiKey);
     form.setFieldValue(
       `${STORAGE_FIELD_OPENAI}.modelName`,
-      openAIconfig?.modelName || "gpt-3.5"
+      openAIconfig?.modelName || OPENAI_MODEL_NAME_GPT3
     );
   };
 
@@ -60,11 +64,11 @@ function Form({ form, ref }: OpenAIFormProps): JSX.Element {
           {...form.getInputProps(`${STORAGE_FIELD_OPENAI}.modelName`)}
         >
           <Radio
-            value="gpt-3.5"
+            value={OPENAI_MODEL_NAME_GPT3}
             label="GPT-3.5 (Faster, cheaper but less capable)"
           />
           <Radio
-            value="gpt-4"
+            value={OPENAI_MODEL_NAME_GPT4}
             label="GPT-4 (More capable and includes vision, but slower and more expensive"
           />
         </Radio.Group>

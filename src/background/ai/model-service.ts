@@ -1,5 +1,8 @@
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
-import { getModelProvider, getModelProviderConfig } from "../../utils/storage";
+import {
+  readModelProvider,
+  readModelProviderConfig,
+} from "../../utils/storage";
 import { ModelProvider, OpenAIConfig, QueryMode } from "../../utils/types";
 import { ChatOpenAI } from "langchain/chat_models/openai";
 
@@ -20,12 +23,12 @@ export class ModelService {
   }
 
   async updateCurrentModelProvider(): Promise<void> {
-    this.currentModelProvider = await getModelProvider();
+    this.currentModelProvider = await readModelProvider();
     if (!this.currentModelProvider) {
       console.log("Unexpected error: Model provider not set");
       return;
     }
-    this.currentModelProviderConfig = await getModelProviderConfig(
+    this.currentModelProviderConfig = await readModelProviderConfig(
       this.currentModelProvider
     );
   }
@@ -40,13 +43,9 @@ export class ModelService {
   }
 
   getCurrentLLM(queryMode: QueryMode): ChatOpenAI {
-    if (this.currentModelProvider !== "openai") {
-      throw new Error("Only OpenAI is supported");
-    }
-
     let modelName;
     let maxTokens;
-    if (this.currentModelProviderConfig?.modelName === "gpt-4") {
+    if (this.currentModelProviderConfig?.modelName === "openai_gpt-4") {
       if (queryMode === "webpage-vqa") {
         modelName = "gpt-4-vision-preview";
         maxTokens = 3000;

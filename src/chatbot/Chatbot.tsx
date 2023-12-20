@@ -1,8 +1,12 @@
 import React, { useCallback, useEffect, useState } from "react";
 
-import { ActionIcon, Divider, Group, Paper } from "@mantine/core";
+import { ActionIcon, Divider, Group, Paper, Select, Text } from "@mantine/core";
 
-import { getModelProvider } from "../utils/storage";
+import {
+  readModelProvider,
+  readModelProviderConfig,
+  saveModelProviderConfig,
+} from "../utils/storage";
 import { ChatUI } from "../components/ChatUI";
 import { generatePageMarkdown } from "../utils/markdown";
 import { ActionList } from "../components/ActionList";
@@ -26,6 +30,7 @@ import {
   SWMessagePayloadGeneral,
   SWMessagePayloadWebpageTextQA,
   SWMessagePayloadWebpageVQA,
+  SupportedModel,
 } from "../utils/types";
 import { IconSettings, IconX } from "@tabler/icons-react";
 import { Logo } from "../components/Logo";
@@ -35,6 +40,7 @@ import html2canvas from "html2canvas";
 import {
   SIDE_PANEL_WIDTH,
   STORAGE_FIELD_AI_MODEL_CONFIG,
+  SUPPORTED_MODELS,
 } from "../utils/constants";
 
 const SELECTION_DEBOUNCE_DELAY_MS = 800;
@@ -49,6 +55,7 @@ export function Chatbot(): JSX.Element {
   const [tabId, setTabId] = useState<number | null>(null);
   const [url, setUrl] = useState<string | null>(null);
   const [queryMode, setQueryMode] = useState<QueryMode>("general");
+  const [selectedModel, setSelectedModel] = useState<string | null>(null);
 
   const { showSidePanel, setShowSidePanel } = useToggleSidePanel();
 
@@ -74,6 +81,29 @@ export function Chatbot(): JSX.Element {
       init();
     }
   }, [url]);
+
+  useEffect(() => {
+    if (!selectedModel) {
+      return;
+    }
+
+    handleSelectedModelChange(selectedModel as SupportedModel);
+  }, [selectedModel]);
+
+  const handleSelectedModelChange = async (selectedModel: SupportedModel) => {
+    const modelProvider = selectedModel.split("_")[0] as ModelProvider;
+
+    const currentModelProviderConfig = await readModelProviderConfig(
+      modelProvider
+    );
+
+    if (currentModelProviderConfig) {
+      saveModelProviderConfig(modelProvider, {
+        ...currentModelProviderConfig,
+        modelName: selectedModel,
+      });
+    }
+  };
 
   const analyzeWebpage = async () => {
     const pageMarkdown = await generatePageMarkdown("general");
@@ -166,6 +196,7 @@ export function Chatbot(): JSX.Element {
   );
 
   const { swPort, isBotProcessing } = useSWMessaging(
+    showSidePanel,
     tabId,
     url,
     handleBotMessagePayload
@@ -188,7 +219,12 @@ export function Chatbot(): JSX.Element {
     setWebpageMarkdown("");
     setMessages([]);
 
-    const modelProvider = await getModelProvider();
+    const modelProvider = await readModelProvider();
+
+    if (modelProvider) {
+      const modelProviderConfig = await readModelProviderConfig(modelProvider);
+      setSelectedModel(modelProviderConfig?.modelName || null);
+    }
 
     setModelProvider(modelProvider);
 
@@ -252,6 +288,16 @@ export function Chatbot(): JSX.Element {
             <IconX size="24px" onClick={handleCloseClick} />
           </ActionIcon>
         </Group>
+        <Select
+          placeholder="Choose a model"
+          nothingFound="No options"
+          data={SUPPORTED_MODELS}
+          sx={{
+            marginTop: "8px",
+          }}
+          value={selectedModel}
+          onChange={setSelectedModel}
+        />
         <ActionList
           queryMode={queryMode}
           sx={{ marginTop: "8px", marginBottom: "8px" }}
@@ -269,6 +315,7 @@ export function Chatbot(): JSX.Element {
           stopPromptProcessing={handleStopPromptProcessing}
           queryMode={queryMode}
           setQueryMode={setQueryMode}
+          selectedModel={selectedModel as SupportedModel}
         />
       </Paper>
     </AppContext.Provider>

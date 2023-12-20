@@ -8,6 +8,7 @@ import {
 const SW_CONNECTION_INTERVAL = 15 * 1000;
 
 export function useSWMessaging(
+  showSidePanel: boolean,
   tabId: number | null,
   url: string | null,
   onMessage: (
@@ -22,7 +23,7 @@ export function useSWMessaging(
   const [isBotProcessing, setIsBotProcessing] = useState(false);
 
   useEffect(() => {
-    if (!tabId) {
+    if (!showSidePanel || !tabId) {
       return;
     }
 
@@ -94,7 +95,7 @@ export function useSWMessaging(
       port?.disconnect();
       stopSWKeepAliveInterval();
     };
-  }, [tabId, url, onMessage]);
+  }, [showSidePanel, tabId, url, onMessage]);
 
   return { swPort, isBotProcessing };
 }

@@ -4,13 +4,13 @@ import {
 } from "./constants";
 import { AIModelConfig, ModelProvider, OpenAIConfig } from "./types";
 
-export async function getAIModelConfig(): Promise<AIModelConfig | null> {
+export async function readAIModelConfig(): Promise<AIModelConfig | null> {
   const result = await chrome.storage.local.get(STORAGE_FIELD_AI_MODEL_CONFIG);
   return result[STORAGE_FIELD_AI_MODEL_CONFIG] || null;
 }
 
-export async function getModelProvider(): Promise<ModelProvider | null> {
-  const aiModelConfig = await getAIModelConfig();
+export async function readModelProvider(): Promise<ModelProvider | null> {
+  const aiModelConfig = await readAIModelConfig();
   if (!aiModelConfig) {
     return null;
   }
@@ -18,10 +18,10 @@ export async function getModelProvider(): Promise<ModelProvider | null> {
   return aiModelConfig.modelProvider;
 }
 
-export async function getModelProviderConfig(
+export async function readModelProviderConfig(
   modelProvider: ModelProvider
 ): Promise<OpenAIConfig | null> {
-  const aiModelConfig = await getAIModelConfig();
+  const aiModelConfig = await readAIModelConfig();
   if (!aiModelConfig) {
     return null;
   }
@@ -33,7 +33,7 @@ export async function saveModelProviderConfig(
   modelProvider: ModelProvider,
   config: OpenAIConfig
 ): Promise<void> {
-  const aiModelConfig = await getAIModelConfig();
+  const aiModelConfig = await readAIModelConfig();
 
   if (!aiModelConfig) {
     await chrome.storage.local.set({
