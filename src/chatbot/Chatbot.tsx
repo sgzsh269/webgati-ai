@@ -1,12 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 
-import { ActionIcon, Divider, Group, Paper, Select, Text } from "@mantine/core";
+import { ActionIcon, Divider, Group, Paper, Select } from "@mantine/core";
 
-import {
-  readModelProvider,
-  readModelProviderConfig,
-  saveModelProviderConfig,
-} from "../utils/storage";
 import { ChatUI } from "../components/ChatUI";
 import { generatePageMarkdown } from "../utils/markdown";
 import { ActionList } from "../components/ActionList";
@@ -19,7 +14,6 @@ import {
 } from "../utils/hooks";
 import {
   ChatMessage,
-  ModelProvider,
   QueryMode,
   SWMessageBotClearMemory,
   SWMessageBotExecute,
@@ -30,6 +24,7 @@ import {
   SWMessagePayloadGeneral,
   SWMessagePayloadWebpageTextQA,
   SWMessagePayloadWebpageVQA,
+  SWMessageUpdateModelId,
   SupportedModel,
 } from "../utils/types";
 import { IconSettings, IconX } from "@tabler/icons-react";
@@ -46,16 +41,13 @@ import {
 const SELECTION_DEBOUNCE_DELAY_MS = 800;
 
 export function Chatbot(): JSX.Element {
-  const [modelProvider, setModelProvider] = useState<ModelProvider | null>(
-    null
-  );
   const [error, setError] = useState("");
   const [messages, setMessages] = useState<Array<ChatMessage>>([]);
   const [webpageMarkdown, setWebpageMarkdown] = useState("");
   const [tabId, setTabId] = useState<number | null>(null);
   const [url, setUrl] = useState<string | null>(null);
   const [queryMode, setQueryMode] = useState<QueryMode>("general");
-  const [selectedModel, setSelectedModel] = useState<string | null>(null);
+  const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
 
   const { showSidePanel, setShowSidePanel } = useToggleSidePanel();
 
@@ -83,26 +75,22 @@ export function Chatbot(): JSX.Element {
   }, [url]);
 
   useEffect(() => {
-    if (!selectedModel) {
+    if (!selectedModelId) {
       return;
     }
 
-    handleSelectedModelChange(selectedModel as SupportedModel);
-  }, [selectedModel]);
+    handleSelectedIdModelChange(selectedModelId as SupportedModel);
+  }, [selectedModelId]);
 
-  const handleSelectedModelChange = async (selectedModel: SupportedModel) => {
-    const modelProvider = selectedModel.split("_")[0] as ModelProvider;
-
-    const currentModelProviderConfig = await readModelProviderConfig(
-      modelProvider
-    );
-
-    if (currentModelProviderConfig) {
-      saveModelProviderConfig(modelProvider, {
-        ...currentModelProviderConfig,
-        modelName: selectedModel,
-      });
-    }
+  const handleSelectedIdModelChange = async (
+    selectedModelId: SupportedModel
+  ) => {
+    await chrome.runtime.sendMessage<SWMessageUpdateModelId>({
+      type: "update-model-id",
+      payload: {
+        modelId: selectedModelId,
+      },
+    });
   };
 
   const analyzeWebpage = async () => {
@@ -219,15 +207,6 @@ export function Chatbot(): JSX.Element {
     setWebpageMarkdown("");
     setMessages([]);
 
-    const modelProvider = await readModelProvider();
-
-    if (modelProvider) {
-      const modelProviderConfig = await readModelProviderConfig(modelProvider);
-      setSelectedModel(modelProviderConfig?.modelName || null);
-    }
-
-    setModelProvider(modelProvider);
-
     const tabId = await chrome.runtime.sendMessage<SWMessageGetTabId>({
       type: "get-tab-id",
     });
@@ -247,14 +226,13 @@ export function Chatbot(): JSX.Element {
 
   useStorageOnChanged(handleStorageChange);
 
-  const disableInput = !modelProvider || isBotProcessing;
+  const disableInput = isBotProcessing;
 
   return (
     <AppContext.Provider
       value={{
         swPort,
         webpageMarkdown,
-        modelProvider,
         analyzeWebpage,
         clearChatContext,
       }}
@@ -295,8 +273,8 @@ export function Chatbot(): JSX.Element {
           sx={{
             marginTop: "8px",
           }}
-          value={selectedModel}
-          onChange={setSelectedModel}
+          value={selectedModelId}
+          onChange={setSelectedModelId}
         />
         <ActionList
           queryMode={queryMode}
@@ -305,7 +283,6 @@ export function Chatbot(): JSX.Element {
         <Divider />
         <ChatUI
           messages={messages}
-          modelProvider={modelProvider}
           disableInput={disableInput}
           isLoading={isBotProcessing}
           error={error}
@@ -315,7 +292,7 @@ export function Chatbot(): JSX.Element {
           stopPromptProcessing={handleStopPromptProcessing}
           queryMode={queryMode}
           setQueryMode={setQueryMode}
-          selectedModel={selectedModel as SupportedModel}
+          selectedModel={selectedModelId as SupportedModel}
         />
       </Paper>
     </AppContext.Provider>

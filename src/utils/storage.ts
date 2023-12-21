@@ -2,25 +2,16 @@ import {
   STORAGE_FIELD_AI_MODEL_CONFIG,
   STORAGE_FIELD_MODEL_PROVIDER,
 } from "./constants";
-import { AIModelConfig, ModelProvider, OpenAIConfig } from "./types";
+import { AIModelConfig, ModelProvider } from "./types";
 
 export async function readAIModelConfig(): Promise<AIModelConfig | null> {
   const result = await chrome.storage.local.get(STORAGE_FIELD_AI_MODEL_CONFIG);
   return result[STORAGE_FIELD_AI_MODEL_CONFIG] || null;
 }
 
-export async function readModelProvider(): Promise<ModelProvider | null> {
-  const aiModelConfig = await readAIModelConfig();
-  if (!aiModelConfig) {
-    return null;
-  }
-
-  return aiModelConfig.modelProvider;
-}
-
 export async function readModelProviderConfig(
   modelProvider: ModelProvider
-): Promise<OpenAIConfig | null> {
+): Promise<Record<string, any> | null> {
   const aiModelConfig = await readAIModelConfig();
   if (!aiModelConfig) {
     return null;
@@ -31,7 +22,7 @@ export async function readModelProviderConfig(
 
 export async function saveModelProviderConfig(
   modelProvider: ModelProvider,
-  config: OpenAIConfig
+  config: Record<string, any>
 ): Promise<void> {
   const aiModelConfig = await readAIModelConfig();
 

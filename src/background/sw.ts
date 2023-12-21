@@ -11,29 +11,42 @@ import {
   SWMessageBotTokenResponse,
   SWMessageToggleSidePanel,
   SWMessageUrlChange,
-  SWState,
   TabState,
+  SupportedModel,
+  SWMessageUpdateModelId,
+  SWMessageIndexWebpage,
 } from "../utils/types";
-import { modelService } from "./ai/model-service";
-import { readModelProvider } from "../utils/storage";
-import { aiService } from "./ai/ai-service";
-import { STORAGE_FIELD_AI_MODEL_CONFIG } from "../utils/constants";
+import { readAIModelConfig } from "../utils/storage";
+import {
+  AI_MODEL_CONFIG_DEFAULT,
+  STORAGE_FIELD_AI_MODEL_CONFIG,
+} from "../utils/constants";
+import { SWService } from "./services/sw-service";
+import { AIService } from "./services/ai/ai-service";
 
 const splitter = RecursiveCharacterTextSplitter.fromLanguage("markdown", {
   chunkSize: 2000,
   chunkOverlap: 200,
 });
 
-const swState: SWState = {
-  installType: null,
-  tabIdStateMap: {},
-};
-
 /// INITIALIZATION
+
+const swService = new SWService();
+const aiService = new AIService(swService);
 
 chrome.runtime.onInstalled.addListener(async function () {
   const management = await chrome.management.getSelf();
-  swState.installType = management.installType as InstallType;
+  swService.swState.installType = management.installType as InstallType;
+
+  let aiModelConfig = await readAIModelConfig();
+  if (!aiModelConfig) {
+    aiModelConfig = AI_MODEL_CONFIG_DEFAULT;
+    await chrome.storage.local.set({
+      [STORAGE_FIELD_AI_MODEL_CONFIG]: aiModelConfig,
+    });
+  }
+
+  aiService.updateAIModelConfig(aiModelConfig!);
 });
 
 /// STORAGE EVENTS
@@ -43,7 +56,7 @@ chrome.storage.local.onChanged.addListener(function (changes) {
     const aiModelConfigChange = changes[STORAGE_FIELD_AI_MODEL_CONFIG];
 
     if (aiModelConfigChange) {
-      modelService.updateCurrentModelProvider();
+      aiService.updateAIModelConfig(aiModelConfigChange.newValue);
     }
   }
 });
@@ -74,16 +87,19 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo) {
       return;
     }
 
-    const oldTabState = swState.tabIdStateMap[tabId];
+    const oldTabState = swService.swState.tabIdStateMap[tabId];
 
     let oldUrl = "";
+    let oldModelId: SupportedModel | null = null;
     if (oldTabState) {
       oldUrl = oldTabState.url!;
+      oldModelId = oldTabState.modelId;
+
       oldTabState.port?.disconnect();
-      delete swState.tabIdStateMap[tabId];
+      delete swService.swState.tabIdStateMap[tabId];
     }
 
-    initTabState(tabId, changeInfo.url || oldUrl);
+    initTabState(tabId, changeInfo.url || oldUrl, oldModelId);
 
     if (changeInfo.url) {
       sendUrlChangeMessage(changeInfo.url);
@@ -95,7 +111,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo) {
 
 chrome.tabs.onRemoved.addListener(function (tabId) {
   stopBot(tabId);
-  delete swState.tabIdStateMap[tabId];
+  delete swService.swState.tabIdStateMap[tabId];
 });
 
 /// MESSAGE EVENTS
@@ -126,6 +142,10 @@ chrome.runtime.onMessage.addListener(function (
     case "get-tab-id":
       sendResponse(tabId);
       break;
+    case "update-model-id":
+      updateTabModelId(tabId, message);
+      sendResponse("OK");
+      break;
     case "keep-alive":
       sendResponse("OK");
       break;
@@ -144,10 +164,10 @@ chrome.runtime.onConnect.addListener(function (port) {
   const tabId = parseInt(port.name.split("-")[1]);
   const sender = port.sender;
 
-  let tabState = swState.tabIdStateMap[tabId] as TabState;
+  let tabState = swService.swState.tabIdStateMap[tabId] as TabState;
   if (!tabState) {
-    initTabState(tabId, sender!.url!);
-    tabState = swState.tabIdStateMap[tabId] as TabState;
+    initTabState(tabId, sender!.url!, null);
+    tabState = swService.swState.tabIdStateMap[tabId] as TabState;
     return;
   }
 
@@ -176,24 +196,42 @@ chrome.runtime.onConnect.addListener(function (port) {
   });
 });
 
-async function indexWebpage(tabId: number, url: string, message: any) {
+async function indexWebpage(
+  tabId: number,
+  url: string,
+  message: SWMessageIndexWebpage
+) {
   const pageMarkdown = message.payload.pageMarkdown;
 
   const webpageDocs = await splitter.createDocuments([pageMarkdown]);
 
-  const tabState = swState.tabIdStateMap[tabId] as TabState;
+  const tabState = swService.swState.tabIdStateMap[tabId] as TabState;
 
   tabState.webpageDocs = webpageDocs;
   tabState.vectorStore = await MemoryVectorStore.fromDocuments(
     webpageDocs,
-    modelService.getEmbeddingModel()!
+    aiService.getEmbeddingModel(tabId)!
   );
 }
 
-async function initTabState(tabId: number, url: string) {
-  swState.tabIdStateMap[tabId] = {
+async function updateTabModelId(
+  tabId: number,
+  message: SWMessageUpdateModelId
+) {
+  const tabState = swService.swState.tabIdStateMap[tabId] as TabState;
+
+  tabState.modelId = message.payload.modelId;
+}
+
+async function initTabState(
+  tabId: number,
+  url: string,
+  modelId: SupportedModel | null
+) {
+  swService.swState.tabIdStateMap[tabId] = {
     tabId,
     url,
+    modelId,
     botAbortController: null,
     botMemory: null,
     vectorStore: null,
@@ -206,16 +244,9 @@ async function invokeBot(msg: SWMessageBotExecute, tabState: TabState) {
   try {
     postBotProcessing(tabState);
 
-    if (!tabState.vectorStore) {
-      tabState.vectorStore = await MemoryVectorStore.fromDocuments(
-        [],
-        modelService.getEmbeddingModel()!
-      );
-    }
-
     if (!tabState.botMemory) {
       tabState.botMemory = new ConversationSummaryBufferMemory({
-        llm: modelService.getOpenAI3Turbo(),
+        llm: aiService.getCurrentLLMFastVariant(tabState.tabId)!,
         maxTokenLimit: 1000,
         returnMessages: true,
       });
@@ -226,7 +257,8 @@ async function invokeBot(msg: SWMessageBotExecute, tabState: TabState) {
     }
 
     await aiService.execute(
-      swState.installType as "development" | "normal",
+      swService.swState.installType as "development" | "normal",
+      tabState.tabId,
       msg,
       tabState.vectorStore,
       tabState.botMemory,
@@ -244,7 +276,7 @@ async function invokeBot(msg: SWMessageBotExecute, tabState: TabState) {
 }
 
 function stopBot(tabId: number) {
-  const tabState = swState.tabIdStateMap[tabId];
+  const tabState = swService.swState.tabIdStateMap[tabId];
 
   if (tabState) {
     const abortController = tabState.botAbortController;
@@ -303,12 +335,3 @@ function sendUrlChangeMessage(url: string) {
     }
   });
 }
-
-async function init() {
-  const modelProvider = await readModelProvider();
-  if (modelProvider) {
-    await modelService.updateCurrentModelProvider();
-  }
-}
-
-init().catch(console.error);

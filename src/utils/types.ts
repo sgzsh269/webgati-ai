@@ -4,8 +4,10 @@ import { VectorStore } from "langchain/vectorstores/base";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
 import {
   STORAGE_FIELD_MODEL_PROVIDER,
-  STORAGE_FIELD_OPENAI,
+  MODEL_PROVIDER_OPENAI,
   SUPPORTED_MODELS,
+  MODEL_PROVIDER_ANTHROPIC,
+  MODEL_PROVIDER_OLLAMA,
 } from "./constants";
 
 export type InstallType = "development" | "normal";
@@ -26,7 +28,6 @@ export type BotMessageType =
 export type AppContextType = {
   swPort: chrome.runtime.Port | null;
   webpageMarkdown: string;
-  modelProvider: ModelProvider | null;
   analyzeWebpage: () => Promise<void>;
   clearChatContext: () => Promise<void>;
 };
@@ -34,11 +35,6 @@ export type AppContextType = {
 export type IndexedData = {
   vectorStore: VectorStore;
   docs: Document[];
-};
-
-export type OpenAIConfig = {
-  apiKey: string;
-  modelName: SupportedModel;
 };
 
 export type ChatMessage = {
@@ -66,6 +62,13 @@ export type SWMessageIndexWebpage = {
   type: "index-webpage";
   payload: {
     pageMarkdown: string;
+  };
+};
+
+export type SWMessageUpdateModelId = {
+  type: "update-model-id";
+  payload: {
+    modelId: SupportedModel;
   };
 };
 
@@ -138,7 +141,8 @@ export type SWMessage =
   | SWMessageBotDone
   | SWMessageBotStop
   | SWMessageBotClearMemory
-  | SWMessageKeepAlive;
+  | SWMessageKeepAlive
+  | SWMessageUpdateModelId;
 
 export type TabState = {
   tabId: number;
@@ -148,6 +152,7 @@ export type TabState = {
   webpageDocs: Document[] | null;
   vectorStore: MemoryVectorStore | null;
   port: chrome.runtime.Port | null;
+  modelId: SupportedModel | null;
 };
 
 export type SWState = {
@@ -157,11 +162,13 @@ export type SWState = {
   };
 };
 
-export type ModelProvider = typeof STORAGE_FIELD_OPENAI;
+export type ModelProvider =
+  | typeof MODEL_PROVIDER_OPENAI
+  | typeof MODEL_PROVIDER_ANTHROPIC
+  | typeof MODEL_PROVIDER_OLLAMA;
 
 export type AIModelConfig = {
-  [STORAGE_FIELD_MODEL_PROVIDER]: ModelProvider;
-  [STORAGE_FIELD_OPENAI]: OpenAIConfig;
+  [K in ModelProvider]: Record<string, any>;
 };
 
 export type ModelFormSubFormRef = {

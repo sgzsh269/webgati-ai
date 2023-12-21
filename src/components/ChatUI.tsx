@@ -1,13 +1,10 @@
 import React, { useState } from "react";
 import {
-  Alert,
   Box,
   Button,
-  Center,
   Loader,
   Notification,
   Stack,
-  Text,
   Group,
   SegmentedControl,
 } from "@mantine/core";
@@ -16,13 +13,11 @@ import { useEffect, useRef } from "react";
 import { useForm } from "@mantine/form";
 import { Message } from "../chatbot/Message";
 import { useScrollIntoView } from "@mantine/hooks";
-import { handleSettingsClick } from "../utils/ui";
-import { ModelProvider, QueryMode, SupportedModel } from "../utils/types";
 import { VISION_COMPATIBLE_MODELS } from "../utils/constants";
+import { QueryMode, SupportedModel } from "../utils/types";
 
 interface ChatUIProps {
   messages: { role: "user" | "ai"; content: string }[];
-  modelProvider: ModelProvider | null;
   isLoading: boolean;
   disableInput: boolean;
   error: string;
@@ -37,7 +32,6 @@ interface ChatUIProps {
 
 export const ChatUI = ({
   messages,
-  modelProvider,
   isLoading,
   disableInput,
   error,
@@ -90,6 +84,12 @@ export const ChatUI = ({
     setShowLoader(isLoading);
   }, [isLoading]);
 
+  useEffect(() => {
+    if (error) {
+      setShowLoader(false);
+    }
+  }, [error]);
+
   const handleFormSubmit = async (values: { question: string }) => {
     form.reset();
     await processUserPrompt(values.question.trim());
@@ -106,29 +106,6 @@ export const ChatUI = ({
         overflow: "hidden",
       }}
     >
-      {!modelProvider && (
-        <Center
-          sx={{
-            height: "100%",
-            width: "100%",
-          }}
-        >
-          <Alert
-            title="OpenAI API Key Required"
-            color="orange"
-            sx={{
-              width: "100%",
-            }}
-          >
-            <Stack>
-              <Text>Set OpenAI API Key</Text>
-              <Button color="orange" onClick={handleSettingsClick}>
-                Set OpenAI API Key
-              </Button>
-            </Stack>
-          </Alert>
-        </Center>
-      )}
       <Stack
         mb="4px"
         pb="36px"
@@ -195,7 +172,9 @@ export const ChatUI = ({
                   {
                     label: "Screenshot",
                     value: "webpage-vqa",
-                    disabled: !VISION_COMPATIBLE_MODELS.includes(selectedModel),
+                    disabled:
+                      !selectedModel ||
+                      !VISION_COMPATIBLE_MODELS.includes(selectedModel),
                   },
                 ]}
               />
