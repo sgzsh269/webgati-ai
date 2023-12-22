@@ -78,6 +78,7 @@ export function Chatbot(): JSX.Element {
   );
 
   useChromeTabUrlChange((url) => {
+    init();
     setUrl(url);
   });
 
@@ -85,14 +86,9 @@ export function Chatbot(): JSX.Element {
     init();
   }, []);
 
-  useEffect(() => {
-    if (url) {
-      init();
-    }
-  }, [url]);
-
   const handleSelectedModelChange = async (selectedModelId: string | null) => {
     setSelectedModelId(selectedModelId);
+    clearSessionState();
 
     if (!selectedModelId) {
       return;
@@ -237,8 +233,7 @@ export function Chatbot(): JSX.Element {
   }, [swPort]);
 
   const init = useCallback(async () => {
-    setWebpageMarkdown("");
-    setMessages([]);
+    clearSessionState();
 
     const tabId = await chrome.runtime.sendMessage<SWMessageGetTabId>({
       type: "get-tab-id",
@@ -247,6 +242,11 @@ export function Chatbot(): JSX.Element {
 
     const aiModelConfig = await readAIModelConfig();
     populateModelSelect(aiModelConfig);
+  }, []);
+
+  const clearSessionState = useCallback(() => {
+    setWebpageMarkdown("");
+    setMessages([]);
   }, []);
 
   const populateModelSelect = (aiModelConfig: AIModelConfig | null) => {

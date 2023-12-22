@@ -142,7 +142,6 @@ export type TabState = {
   url: string | null | undefined;
   botAbortController: AbortController | null;
   botMemory: ConversationSummaryBufferMemory | null;
-  webpageDocs: Document[] | null;
   vectorStore: MemoryVectorStore | null;
   port: chrome.runtime.Port | null;
   model: {

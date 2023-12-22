@@ -89,16 +89,10 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo) {
     const oldTabState = swService.swState.tabIdStateMap[tabId];
 
     let oldUrl = "";
-    let oldModel: TabState["model"] | null = null;
     if (oldTabState) {
       oldUrl = oldTabState.url!;
-      oldModel = oldTabState.model;
-
       oldTabState.port?.disconnect();
-      delete swService.swState.tabIdStateMap[tabId];
     }
-
-    initTabState(tabId, changeInfo.url || oldUrl, oldModel);
 
     if (changeInfo.url) {
       sendUrlChangeMessage(changeInfo.url);
@@ -142,14 +136,14 @@ chrome.runtime.onMessage.addListener(function (
       sendResponse(tabId);
       break;
     case "update-model":
-      updateTabModel(tabId, message);
+      handleModelUpdate(tabId, message);
       sendResponse("OK");
       break;
     case "keep-alive":
       sendResponse("OK");
       break;
     default:
-      console.log(
+      throw new Error(
         `Message type not implemented for chrome.runtime.onMessage listnener: ${messageType}`
       );
   }
@@ -165,35 +159,41 @@ chrome.runtime.onConnect.addListener(function (port) {
 
   let tabState = swService.swState.tabIdStateMap[tabId] as TabState;
   if (!tabState) {
-    initTabState(tabId, sender!.url!, null);
-    tabState = swService.swState.tabIdStateMap[tabId] as TabState;
-    return;
+    tabState = initTabState(tabId, sender!.url!);
   }
 
   tabState.port = port;
 
-  port.onMessage.addListener(async function (msg: SWMessage) {
-    switch (msg.type) {
-      case "bot-execute":
-        invokeBot(msg, tabState);
-        break;
-      case "bot-stop":
-        stopBot(tabId);
-        break;
-      case "bot-clear-memory":
-        clearBotMemory(tabState);
-        break;
-      default:
-        console.log(
-          `Message type not implemented for port listener: ${msg.type}`
-        );
-    }
+  port.onMessage.addListener((message: SWMessage) => {
+    handlePortMessage(tabState, message);
   });
 
   port.onDisconnect.addListener(() => {
-    tabState.port = null;
+    handlePortDisconnect(tabState);
   });
 });
+
+async function handlePortMessage(tabState: TabState, message: SWMessage) {
+  switch (message.type) {
+    case "bot-execute":
+      invokeBot(message, tabState);
+      break;
+    case "bot-stop":
+      stopBot(tabState.tabId);
+      break;
+    case "bot-clear-memory":
+      clearBotMemory(tabState);
+      break;
+    default:
+      throw new Error(
+        `Message type not implemented for port listener: ${message.type}`
+      );
+  }
+}
+
+function handlePortDisconnect(tabState: TabState) {
+  tabState.port = null;
+}
 
 async function indexWebpage(
   tabId: number,
@@ -206,53 +206,52 @@ async function indexWebpage(
 
   const tabState = swService.swState.tabIdStateMap[tabId] as TabState;
 
-  tabState.webpageDocs = webpageDocs;
   tabState.vectorStore = await MemoryVectorStore.fromDocuments(
     webpageDocs,
     aiService.getEmbeddingModel(tabId)!
   );
 }
 
-async function updateTabModel(tabId: number, message: SWMessageUpdateModel) {
+function handleModelUpdate(tabId: number, message: SWMessageUpdateModel) {
   const tabState = swService.swState.tabIdStateMap[tabId] as TabState;
 
   tabState.model = {
     provider: message.payload.modelProvider,
     modelName: message.payload.modelName,
   };
+
+  tabState.botMemory = null;
+  tabState.vectorStore = null;
 }
 
-async function initTabState(
-  tabId: number,
-  url: string,
-  model: TabState["model"]
-) {
+function initTabState(tabId: number, url: string | null | undefined): TabState {
   swService.swState.tabIdStateMap[tabId] = {
     tabId,
     url,
-    model,
+    model: null,
     botAbortController: null,
     botMemory: null,
     vectorStore: null,
-    webpageDocs: [],
     port: null,
   };
+
+  return swService.swState.tabIdStateMap[tabId]!;
 }
 
 async function invokeBot(msg: SWMessageBotExecute, tabState: TabState) {
   try {
     postBotProcessing(tabState);
 
+    if (!tabState.botAbortController) {
+      tabState.botAbortController = new AbortController();
+    }
+
     if (!tabState.botMemory) {
       tabState.botMemory = new ConversationSummaryBufferMemory({
-        llm: aiService.getCurrentLLM(tabState.tabId, "general", true),
+        llm: aiService.getCurrentLLM(tabState.tabId, true),
         maxTokenLimit: 1000,
         returnMessages: true,
       });
-    }
-
-    if (!tabState.botAbortController) {
-      tabState.botAbortController = new AbortController();
     }
 
     await aiService.execute(
@@ -260,7 +259,7 @@ async function invokeBot(msg: SWMessageBotExecute, tabState: TabState) {
       tabState.tabId,
       msg,
       tabState.vectorStore,
-      tabState.botMemory,
+      tabState.botMemory!,
       tabState.botAbortController,
       (token) => postBotTokenResponse(tabState, token)
     );

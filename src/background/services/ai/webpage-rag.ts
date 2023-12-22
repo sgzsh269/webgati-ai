@@ -30,7 +30,6 @@ export async function executeWebpageRAG(
     slowerModel,
     vectorStore.asRetriever(),
     {
-      verbose: true,
       returnSourceDocuments: true,
       qaChainOptions: {
         type: "stuff",

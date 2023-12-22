@@ -2,7 +2,6 @@ import { ConversationSummaryBufferMemory } from "langchain/memory";
 import { VectorStore } from "langchain/vectorstores/base";
 import {
   AIModelConfig,
-  QueryMode,
   SWMessageBotExecute,
   TabState,
 } from "../../../utils/types";
@@ -16,33 +15,30 @@ import { Embeddings } from "langchain/embeddings/base";
 import { ChatOpenAI } from "langchain/chat_models/openai";
 import { ChatAnthropic } from "langchain/chat_models/anthropic";
 import { BaseChatModel } from "langchain/chat_models/base";
-// import { HuggingFaceTransformersEmbeddings } from "langchain/embeddings/hf_transformers";
-// import { env } from "@xenova/transformers";
+import { HuggingFaceTransformersEmbeddings } from "langchain/embeddings/hf_transformers";
+import { env } from "@xenova/transformers";
 
-// TODO
-// env.allowLocalModels = false;
-// env.backends.onnx.wasm.numThreads = 1;
+env.allowLocalModels = false;
+env.backends.onnx.wasm.numThreads = 1;
 
 const MAX_RETRIES = 3;
-const DEFAULT_MAX_TOKENS = 4000;
 
 export class AIService {
   private swService: SWService;
   private aiModelConfig: AIModelConfig | null;
-  // private hfEmbeddings: HuggingFaceTransformersEmbeddings;
-  // private hfTransformersPipeline: any;
+  private hfEmbeddings: HuggingFaceTransformersEmbeddings;
 
   constructor(swService: SWService) {
     this.swService = swService;
     this.aiModelConfig = null;
-    // this.hfEmbeddings = new HuggingFaceTransformersEmbeddings({
-    //   modelName: "Xenova/all-MiniLM-L6-v2",
-    // });
+    this.hfEmbeddings = new HuggingFaceTransformersEmbeddings({
+      modelName: "Xenova/all-MiniLM-L6-v2",
+    });
   }
 
   async initialize(): Promise<void> {
     // Running this initially to trigger downloading and caching of the model
-    // await this.hfEmbeddings.embedQuery("initialize");
+    await this.hfEmbeddings.embedQuery("initialize");
   }
 
   updateAIModelConfig(aiModelConfig: AIModelConfig): void {
@@ -78,7 +74,7 @@ export class AIService {
     return modelProviderConfig.apiKey || null;
   }
 
-  getEmbeddingModel(tabId: number): Embeddings | undefined {
+  getEmbeddingModel(tabId: number): Embeddings {
     const modelProvider = this.getModel(tabId).provider;
 
     if (modelProvider === "openai") {
@@ -87,26 +83,22 @@ export class AIService {
         maxRetries: MAX_RETRIES,
       });
     }
+
+    return this.hfEmbeddings;
   }
 
-  getCurrentLLM(
-    tabId: number,
-    queryMode: QueryMode,
-    useEfficient = false
-  ): BaseChatModel {
+  getCurrentLLM(tabId: number, useEfficient = false): BaseChatModel {
     const modelProvider = this.getModel(tabId).provider;
     const modelProviderConfig = this.getModelProviderConfig(tabId);
     const modelName = this.getModel(tabId).modelName;
 
     if (modelProvider === "openai") {
-      console.log("modelName", modelName);
-      console.log("efficient", useEfficient);
-
       return new ChatOpenAI({
         modelName: useEfficient ? "gpt-3.5-turbo" : modelName,
         openAIApiKey: modelProviderConfig.apiKey,
         temperature: 0,
         streaming: useEfficient ? false : true,
+        maxTokens: 4096,
         maxRetries: MAX_RETRIES,
       });
     }
@@ -134,10 +126,8 @@ export class AIService {
   ): Promise<void> {
     const queryMode = msg.payload.queryMode;
 
-    const currentModel = this.getCurrentLLM(tabId, queryMode);
-    const fasterModel = this.getCurrentLLM(tabId, "general", true);
-
-    console.log("currentModel", currentModel);
+    const currentModel = this.getCurrentLLM(tabId);
+    const fasterModel = this.getCurrentLLM(tabId, true);
 
     if (queryMode === "general") {
       await executeGeneralChat(
@@ -148,6 +138,10 @@ export class AIService {
         handleNewTokenCallback
       );
     } else if (queryMode === "webpage-text-qa") {
+      if (!vectorStore) {
+        throw new Error("Vector store not found");
+      }
+
       await executeWebpageRAG(
         fasterModel,
         currentModel,
