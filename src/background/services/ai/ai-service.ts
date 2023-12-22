@@ -2,10 +2,9 @@ import { ConversationSummaryBufferMemory } from "langchain/memory";
 import { VectorStore } from "langchain/vectorstores/base";
 import {
   AIModelConfig,
-  ModelProvider,
   QueryMode,
   SWMessageBotExecute,
-  SupportedModel,
+  TabState,
 } from "../../../utils/types";
 import { executeWebpageSummary } from "./webpage-summary";
 import { executeWebpageRAG } from "./webpage-rag";
@@ -13,9 +12,9 @@ import { executeGeneralChat } from "./general-chat";
 import { executeWebpageVisionChat } from "./webpage-vision";
 import { SWService } from "../sw-service";
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
+import { Embeddings } from "langchain/embeddings/base";
 import { ChatOpenAI } from "langchain/chat_models/openai";
 import { ChatAnthropic } from "langchain/chat_models/anthropic";
-import { ChatOllama } from "langchain/chat_models/ollama";
 import { BaseChatModel } from "langchain/chat_models/base";
 // import { HuggingFaceTransformersEmbeddings } from "langchain/embeddings/hf_transformers";
 // import { env } from "@xenova/transformers";
@@ -50,31 +49,22 @@ export class AIService {
     this.aiModelConfig = aiModelConfig;
   }
 
-  getModelId(tabId: number): SupportedModel {
+  getModel(tabId: number): NonNullable<TabState["model"]> {
     const tabState = this.swService.swState.tabIdStateMap[tabId];
+
     if (!tabState) {
-      throw new Error("No tabIdStateMap found for tabId: " + tabId);
+      throw new Error("No tab state found for tab id: " + tabId);
     }
 
-    if (!tabState.modelId) {
-      throw new Error("No modelId found for tabId: " + tabId);
+    if (!tabState.model) {
+      throw new Error("No model found for tab id: " + tabId);
     }
 
-    return tabState.modelId;
-  }
-
-  getModelName(modelId: SupportedModel): string {
-    return modelId.split("_")[1];
-  }
-
-  getModelProvider(tabId: number): ModelProvider {
-    const tabModelId = this.getModelId(tabId);
-
-    return tabModelId.split("_")[0] as ModelProvider;
+    return tabState.model;
   }
 
   getModelProviderConfig(tabId: number): Record<string, any> {
-    const modelProvider = this.getModelProvider(tabId);
+    const modelProvider = this.getModel(tabId).provider;
 
     if (!this.aiModelConfig) {
       throw new Error("No AI model config found");
@@ -88,108 +78,45 @@ export class AIService {
     return modelProviderConfig.apiKey || null;
   }
 
-  getEmbeddingModel(tabId: number): OpenAIEmbeddings | undefined {
-    const modelProvider = this.getModelProvider(tabId);
-
-    if (modelProvider !== "openai") {
-      return undefined;
-    }
-    return new OpenAIEmbeddings({
-      openAIApiKey: this.getModelProviderAPIKey(tabId) as string,
-      maxRetries: MAX_RETRIES,
-    });
-  }
-
-  getCurrentLLMFastVariant(tabId: number): BaseChatModel {
-    const modelProvider = this.getModelProvider(tabId);
-    const tabModelId = this.getModelId(tabId);
-    const modelProviderConfig = this.getModelProviderConfig(tabId);
-    const modelName = this.getModelName(tabModelId);
+  getEmbeddingModel(tabId: number): Embeddings | undefined {
+    const modelProvider = this.getModel(tabId).provider;
 
     if (modelProvider === "openai") {
+      return new OpenAIEmbeddings({
+        openAIApiKey: this.getModelProviderAPIKey(tabId) as string,
+        maxRetries: MAX_RETRIES,
+      });
+    }
+  }
+
+  getCurrentLLM(
+    tabId: number,
+    queryMode: QueryMode,
+    useEfficient = false
+  ): BaseChatModel {
+    const modelProvider = this.getModel(tabId).provider;
+    const modelProviderConfig = this.getModelProviderConfig(tabId);
+    const modelName = this.getModel(tabId).modelName;
+
+    if (modelProvider === "openai") {
+      console.log("modelName", modelName);
+      console.log("efficient", useEfficient);
+
       return new ChatOpenAI({
-        modelName: "gpt-3.5-turbo",
+        modelName: useEfficient ? "gpt-3.5-turbo" : modelName,
         openAIApiKey: modelProviderConfig.apiKey,
         temperature: 0,
+        streaming: useEfficient ? false : true,
         maxRetries: MAX_RETRIES,
       });
     }
     if (modelProvider === "anthropic") {
       return new ChatAnthropic({
-        modelName: "claude-instant-1.2",
+        modelName: useEfficient ? "claude-instant-1.2" : modelName,
         anthropicApiKey: modelProviderConfig.apiKey,
         temperature: 0,
-        maxTokensToSample: DEFAULT_MAX_TOKENS,
         maxRetries: MAX_RETRIES,
-      });
-    } else if (modelProvider === "ollama") {
-      return new ChatOllama({
-        baseUrl: modelProviderConfig.baseUrl,
-        model: modelName,
-      });
-    }
-
-    throw new Error("Unsupported model provider: " + modelProvider);
-  }
-
-  getCurrentLLM(tabId: number, queryMode: QueryMode): BaseChatModel {
-    const tabModelId = this.getModelId(tabId);
-    const modelProviderConfig = this.getModelProviderConfig(tabId);
-    const modelProvider = this.getModelProvider(tabId);
-    const modelName = this.getModelName(tabModelId);
-
-    if (modelProvider !== "ollama") {
-      if (!modelProviderConfig.apiKey) {
-        throw new Error("No API key found for model in settings");
-      }
-    }
-
-    if (modelProvider === "openai") {
-      let modelName;
-      let maxTokens;
-      if (tabModelId === "openai_gpt-4") {
-        if (queryMode === "webpage-vqa") {
-          modelName = "gpt-4-vision-preview";
-          maxTokens = 3000;
-        } else {
-          modelName = "gpt-4-1106-preview";
-          maxTokens = undefined;
-        }
-      } else {
-        modelName = "gpt-3.5-turbo";
-        maxTokens = undefined;
-      }
-
-      return new ChatOpenAI({
-        modelName,
-        maxTokens,
-        openAIApiKey: modelProviderConfig.apiKey,
-        temperature: 0,
-        streaming: true,
-        maxRetries: MAX_RETRIES,
-      });
-    }
-    if (modelProvider === "anthropic") {
-      let modelName;
-      if (tabModelId === "anthropic_claude-2") {
-        modelName = "claude-2.1";
-      } else {
-        modelName = "claude-instant-1.2";
-      }
-
-      return new ChatAnthropic({
-        modelName,
-        anthropicApiKey: modelProviderConfig.apiKey,
-        temperature: 0,
-        maxTokensToSample: DEFAULT_MAX_TOKENS,
-        maxRetries: MAX_RETRIES,
-        streaming: true,
-      });
-    }
-    if (modelProvider === "ollama") {
-      return new ChatOllama({
-        baseUrl: modelProviderConfig.baseUrl,
-        model: modelName,
+        streaming: useEfficient ? false : true,
       });
     }
 
@@ -208,7 +135,9 @@ export class AIService {
     const queryMode = msg.payload.queryMode;
 
     const currentModel = this.getCurrentLLM(tabId, queryMode);
-    const fasterModel = this.getCurrentLLMFastVariant(tabId);
+    const fasterModel = this.getCurrentLLM(tabId, "general", true);
+
+    console.log("currentModel", currentModel);
 
     if (queryMode === "general") {
       await executeGeneralChat(

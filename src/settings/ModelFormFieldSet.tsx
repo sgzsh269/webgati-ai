@@ -62,7 +62,7 @@ export function ModelFormFieldSet({
               {...form.getInputProps(`${formFieldModels}.${index}.modelName`)}
             />
             <Checkbox
-              label="Vision"
+              label="Has Vision"
               {...form.getInputProps(`${formFieldModels}.${index}.hasVision`, {
                 type: "checkbox",
               })}

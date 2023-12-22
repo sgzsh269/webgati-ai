@@ -12,8 +12,7 @@ import {
   SWMessageToggleSidePanel,
   SWMessageUrlChange,
   TabState,
-  SupportedModel,
-  SWMessageUpdateModelId,
+  SWMessageUpdateModelId as SWMessageUpdateModel,
   SWMessageIndexWebpage,
 } from "../utils/types";
 import { readAIModelConfig } from "../utils/storage";
@@ -90,16 +89,16 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo) {
     const oldTabState = swService.swState.tabIdStateMap[tabId];
 
     let oldUrl = "";
-    let oldModelId: SupportedModel | null = null;
+    let oldModel: TabState["model"] | null = null;
     if (oldTabState) {
       oldUrl = oldTabState.url!;
-      oldModelId = oldTabState.modelId;
+      oldModel = oldTabState.model;
 
       oldTabState.port?.disconnect();
       delete swService.swState.tabIdStateMap[tabId];
     }
 
-    initTabState(tabId, changeInfo.url || oldUrl, oldModelId);
+    initTabState(tabId, changeInfo.url || oldUrl, oldModel);
 
     if (changeInfo.url) {
       sendUrlChangeMessage(changeInfo.url);
@@ -142,8 +141,8 @@ chrome.runtime.onMessage.addListener(function (
     case "get-tab-id":
       sendResponse(tabId);
       break;
-    case "update-model-id":
-      updateTabModelId(tabId, message);
+    case "update-model":
+      updateTabModel(tabId, message);
       sendResponse("OK");
       break;
     case "keep-alive":
@@ -214,24 +213,24 @@ async function indexWebpage(
   );
 }
 
-async function updateTabModelId(
-  tabId: number,
-  message: SWMessageUpdateModelId
-) {
+async function updateTabModel(tabId: number, message: SWMessageUpdateModel) {
   const tabState = swService.swState.tabIdStateMap[tabId] as TabState;
 
-  tabState.modelId = message.payload.modelId;
+  tabState.model = {
+    provider: message.payload.modelProvider,
+    modelName: message.payload.modelName,
+  };
 }
 
 async function initTabState(
   tabId: number,
   url: string,
-  modelId: SupportedModel | null
+  model: TabState["model"]
 ) {
   swService.swState.tabIdStateMap[tabId] = {
     tabId,
     url,
-    modelId,
+    model,
     botAbortController: null,
     botMemory: null,
     vectorStore: null,
@@ -246,7 +245,7 @@ async function invokeBot(msg: SWMessageBotExecute, tabState: TabState) {
 
     if (!tabState.botMemory) {
       tabState.botMemory = new ConversationSummaryBufferMemory({
-        llm: aiService.getCurrentLLMFastVariant(tabState.tabId)!,
+        llm: aiService.getCurrentLLM(tabState.tabId, "general", true),
         maxTokenLimit: 1000,
         returnMessages: true,
       });

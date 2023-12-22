@@ -6,7 +6,6 @@ import { useEffect } from "react";
 import {
   AI_MODEL_CONFIG_DEFAULT,
   MODEL_PROVIDER_ANTHROPIC,
-  MODEL_PROVIDER_OLLAMA,
   MODEL_PROVIDER_OPENAI,
 } from "../utils/constants";
 import { ModelProvider } from "../utils/types";
@@ -49,7 +48,6 @@ export function ModelForm(): JSX.Element {
               data={[
                 { value: MODEL_PROVIDER_OPENAI, label: "OpenAI" },
                 { value: MODEL_PROVIDER_ANTHROPIC, label: "Anthropic" },
-                { value: MODEL_PROVIDER_OLLAMA, label: "[Local] Ollama" },
               ]}
               value={modelProvider}
               onChange={(value: ModelProvider) => {

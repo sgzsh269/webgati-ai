@@ -2,11 +2,7 @@ import { Document } from "langchain/document";
 import { ConversationSummaryBufferMemory } from "langchain/memory";
 import { VectorStore } from "langchain/vectorstores/base";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
-import {
-  MODEL_PROVIDER_OPENAI,
-  SUPPORTED_MODELS,
-  MODEL_PROVIDER_ANTHROPIC,
-} from "./constants";
+import { MODEL_PROVIDER_OPENAI, MODEL_PROVIDER_ANTHROPIC } from "./constants";
 
 export type InstallType = "development" | "normal";
 export type QueryMode =
@@ -62,9 +58,10 @@ export type SWMessageIndexWebpage = {
 };
 
 export type SWMessageUpdateModelId = {
-  type: "update-model-id";
+  type: "update-model";
   payload: {
-    modelId: SupportedModel;
+    modelProvider: ModelProvider;
+    modelName: string;
   };
 };
 
@@ -148,7 +145,10 @@ export type TabState = {
   webpageDocs: Document[] | null;
   vectorStore: MemoryVectorStore | null;
   port: chrome.runtime.Port | null;
-  modelId: SupportedModel | null;
+  model: {
+    provider: ModelProvider;
+    modelName: string;
+  } | null;
 };
 
 export type SWState = {

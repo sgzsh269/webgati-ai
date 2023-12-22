@@ -8,7 +8,6 @@ import {
   Group,
   Paper,
   Select,
-  Stack,
   Text,
 } from "@mantine/core";
 
@@ -112,9 +111,10 @@ export function Chatbot(): JSX.Element {
       );
 
       await chrome.runtime.sendMessage<SWMessageUpdateModelId>({
-        type: "update-model-id",
+        type: "update-model",
         payload: {
-          modelId: selectedModelId,
+          modelProvider,
+          modelName,
         },
       });
 
