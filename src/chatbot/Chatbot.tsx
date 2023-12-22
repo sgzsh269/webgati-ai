@@ -1,6 +1,16 @@
 import React, { useCallback, useEffect, useState } from "react";
 
-import { ActionIcon, Divider, Group, Paper, Select } from "@mantine/core";
+import {
+  ActionIcon,
+  Alert,
+  Button,
+  Divider,
+  Group,
+  Paper,
+  Select,
+  Stack,
+  Text,
+} from "@mantine/core";
 
 import { ChatUI } from "../components/ChatUI";
 import { generatePageMarkdown } from "../utils/markdown";
@@ -15,6 +25,8 @@ import {
 import {
   AIModelConfig,
   ChatMessage,
+  ModelConfig,
+  ModelProvider,
   QueryMode,
   SWMessageBotClearMemory,
   SWMessageBotExecute,
@@ -26,11 +38,10 @@ import {
   SWMessagePayloadWebpageTextQA,
   SWMessagePayloadWebpageVQA,
   SWMessageUpdateModelId,
-  SupportedModel,
 } from "../utils/types";
-import { IconSettings, IconX } from "@tabler/icons-react";
+import { IconAlertCircle, IconSettings, IconX } from "@tabler/icons-react";
 import { Logo } from "../components/Logo";
-import { handleSettingsClick } from "../utils/ui";
+import { openSettings } from "../utils/ui";
 import { useStorageOnChanged } from "../utils/hooks/useStorageOnChanged";
 import html2canvas from "html2canvas";
 import {
@@ -50,6 +61,11 @@ export function Chatbot(): JSX.Element {
   const [queryMode, setQueryMode] = useState<QueryMode>("general");
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
   const [modelSelectOptions, setModelSelectOptions] = useState<any[]>([]);
+  const [selectedModel, setSelectedModel] = useState<{
+    modelProvider: ModelProvider;
+    apiKey?: string;
+    config: ModelConfig;
+  } | null>(null);
 
   const { showSidePanel, setShowSidePanel } = useToggleSidePanel();
 
@@ -76,23 +92,38 @@ export function Chatbot(): JSX.Element {
     }
   }, [url]);
 
-  useEffect(() => {
+  const handleSelectedModelChange = async (selectedModelId: string | null) => {
+    setSelectedModelId(selectedModelId);
+
     if (!selectedModelId) {
       return;
     }
 
-    handleSelectedIdModelChange(selectedModelId as SupportedModel);
-  }, [selectedModelId]);
+    const [modelProvider, modelName] = selectedModelId.split("_") as [
+      ModelProvider,
+      string
+    ];
 
-  const handleSelectedIdModelChange = async (
-    selectedModelId: SupportedModel
-  ) => {
-    await chrome.runtime.sendMessage<SWMessageUpdateModelId>({
-      type: "update-model-id",
-      payload: {
-        modelId: selectedModelId,
-      },
-    });
+    const aiModelConfig = await readAIModelConfig();
+
+    if (aiModelConfig) {
+      const modelConfig = aiModelConfig[modelProvider].models.find(
+        (item) => item.modelName === modelName
+      );
+
+      await chrome.runtime.sendMessage<SWMessageUpdateModelId>({
+        type: "update-model-id",
+        payload: {
+          modelId: selectedModelId,
+        },
+      });
+
+      setSelectedModel({
+        modelProvider,
+        apiKey: aiModelConfig[modelProvider].apiKey,
+        config: modelConfig as ModelConfig,
+      });
+    }
   };
 
   const analyzeWebpage = async () => {
@@ -222,7 +253,8 @@ export function Chatbot(): JSX.Element {
     const modelOptions = [];
 
     if (aiModelConfig) {
-      for (const [modelProvider, config] of Object.entries(aiModelConfig)) {
+      for (const modelProvider of ["openai", "anthropic"] as ModelProvider[]) {
+        const config = aiModelConfig[modelProvider];
         for (const item of config.models) {
           modelOptions.push({
             value: `${modelProvider}_${item.modelName}`,
@@ -242,14 +274,16 @@ export function Chatbot(): JSX.Element {
 
       if (aiModelConfigChanges) {
         populateModelSelect(aiModelConfigChanges.newValue);
+        handleSelectedModelChange(selectedModelId);
       }
     },
-    []
+    [selectedModelId]
   );
 
   useStorageOnChanged(handleStorageChange);
 
-  const disableInput = isBotProcessing;
+  const requiresApiKey = !selectedModel?.apiKey;
+  const disableInput = !selectedModel || requiresApiKey || isBotProcessing;
 
   return (
     <AppContext.Provider
@@ -281,7 +315,7 @@ export function Chatbot(): JSX.Element {
         withBorder
       >
         <Group position="apart">
-          <ActionIcon variant="transparent" onClick={handleSettingsClick}>
+          <ActionIcon variant="transparent" onClick={openSettings}>
             <IconSettings size="24px" />
           </ActionIcon>
           <Logo />
@@ -297,13 +331,29 @@ export function Chatbot(): JSX.Element {
             marginTop: "8px",
           }}
           value={selectedModelId}
-          onChange={setSelectedModelId}
+          onChange={handleSelectedModelChange}
+          searchable
         />
         <ActionList
           queryMode={queryMode}
           sx={{ marginTop: "8px", marginBottom: "8px" }}
         />
         <Divider />
+        {!selectedModel && (
+          <Alert icon={<IconAlertCircle size={16} />} color="red">
+            Please select a model
+          </Alert>
+        )}
+        {selectedModel && requiresApiKey && (
+          <Alert icon={<IconAlertCircle size={16} />} color="orange">
+            <Text size="sm">
+              Please set API Key for selected model in settings
+            </Text>
+            <Button color="orange" size="xs" onClick={openSettings}>
+              Open Settings
+            </Button>
+          </Alert>
+        )}
         <ChatUI
           messages={messages}
           disableInput={disableInput}
@@ -315,7 +365,7 @@ export function Chatbot(): JSX.Element {
           stopPromptProcessing={handleStopPromptProcessing}
           queryMode={queryMode}
           setQueryMode={setQueryMode}
-          selectedModel={selectedModelId as SupportedModel}
+          modelConfig={selectedModel?.config || null}
         />
       </Paper>
     </AppContext.Provider>

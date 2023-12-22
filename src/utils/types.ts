@@ -15,8 +15,6 @@ export type QueryMode =
   | SWMessagePayloadWebpageVQA["queryMode"]
   | SWMessagePayloadSummary["queryMode"];
 
-export type SupportedModel = (typeof SUPPORTED_MODELS)[number]["value"];
-
 export type BotMessageType =
   | "agent"
   | "docs-summarizer"
@@ -165,8 +163,14 @@ export type ModelProvider =
   | typeof MODEL_PROVIDER_ANTHROPIC;
 // | typeof MODEL_PROVIDER_OLLAMA;
 
+export type ModelConfig = {
+  label: string;
+  modelName: string;
+  hasVision: boolean;
+};
+
 export type AIModelConfig = {
   [K in ModelProvider]: {
-    models: Array<{ label: string; modelName: string; hasVision: boolean }>;
+    models: Array<ModelConfig>;
   } & Record<string, any>;
 };

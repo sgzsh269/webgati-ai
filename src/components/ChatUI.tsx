@@ -13,8 +13,7 @@ import { useEffect, useRef } from "react";
 import { useForm } from "@mantine/form";
 import { Message } from "../chatbot/Message";
 import { useScrollIntoView } from "@mantine/hooks";
-import { VISION_COMPATIBLE_MODELS } from "../utils/constants";
-import { QueryMode, SupportedModel } from "../utils/types";
+import { QueryMode, ModelConfig } from "../utils/types";
 
 interface ChatUIProps {
   messages: { role: "user" | "ai"; content: string }[];
@@ -22,7 +21,7 @@ interface ChatUIProps {
   disableInput: boolean;
   error: string;
   queryMode: QueryMode;
-  selectedModel: SupportedModel | null;
+  modelConfig: ModelConfig | null;
   setError: (error: string) => void;
   clearChatContext: () => void;
   processUserPrompt: (prompt: string) => Promise<void>;
@@ -36,7 +35,7 @@ export const ChatUI = ({
   disableInput,
   error,
   queryMode,
-  selectedModel,
+  modelConfig,
   setError,
   clearChatContext,
   processUserPrompt,
@@ -172,9 +171,7 @@ export const ChatUI = ({
                   {
                     label: "Screenshot",
                     value: "webpage-vqa",
-                    disabled:
-                      !selectedModel ||
-                      !VISION_COMPATIBLE_MODELS.includes(selectedModel),
+                    disabled: !modelConfig || !modelConfig.hasVision,
                   },
                 ]}
               />

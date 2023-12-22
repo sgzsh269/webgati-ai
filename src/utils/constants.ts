@@ -49,13 +49,33 @@ export const SUPPORTED_MODELS = [
   },
 ] as const;
 
-export const VISION_COMPATIBLE_MODELS = [OPENAI_MODEL_ID_GPT4];
-
 export const AI_MODEL_CONFIG_DEFAULT: AIModelConfig = {
   [MODEL_PROVIDER_OPENAI]: {
-    models: [],
+    models: [
+      {
+        label: "OpenAI GPT-3.5",
+        modelName: "gpt-3.5-turbo",
+        hasVision: false,
+      },
+      {
+        label: "OpenAI GPT-4 w/ vision",
+        modelName: "gpt-4-vision-preview",
+        hasVision: true,
+      },
+    ],
   },
   [MODEL_PROVIDER_ANTHROPIC]: {
-    models: [],
+    models: [
+      {
+        label: "Anthropic Claude 2",
+        modelName: "claude-2.1",
+        hasVision: false,
+      },
+      {
+        label: "Anthropic Claude Instant",
+        modelName: "claude-instant-1.2",
+        hasVision: false,
+      },
+    ],
   },
 };
