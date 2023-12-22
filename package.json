@@ -16,6 +16,7 @@
     "@mantine/hooks": "^5.10.5",
     "@mantine/notifications": "^5.10.5",
     "@tabler/icons-react": "^2.34.0",
+    "@xenova/transformers": "^2.12.1",
     "html2canvas": "^1.4.1",
     "jquery": "^3.7.1",
     "langchain": "^0.0.205",

@@ -1,25 +1,22 @@
-import React, { useImperativeHandle } from "react";
+import React from "react";
 import { useEffect } from "react";
 
-import { ModelFormSubFormRef, ModelProvider } from "../utils/types";
-import {
-  readModelProviderConfig,
-  saveModelProviderConfig,
-} from "../utils/storage";
+import { ModelProvider } from "../utils/types";
+import { readModelProviderConfig } from "../utils/storage";
+import { Stack } from "@mantine/core";
+import { ModelFormFieldSet } from "./ModelFormFieldSet";
 
-interface ModelFormFields {
+interface ModelFormFieldsProps {
   form: any;
-  ref?: React.ForwardedRef<ModelFormSubFormRef>;
   modelProvider: ModelProvider;
   FormFieldsComponent: React.FC<{ form: any; modelProvider: ModelProvider }>;
 }
 
-function FormFields({
+export function ModelFormFields({
   form,
-  ref,
   modelProvider,
   FormFieldsComponent,
-}: ModelFormFields): JSX.Element {
+}: ModelFormFieldsProps): JSX.Element {
   const loadModelConfig = async () => {
     const modelConfig = await readModelProviderConfig(modelProvider);
 
@@ -32,23 +29,14 @@ function FormFields({
     }
   };
 
-  const save = async () => {
-    await saveModelProviderConfig(modelProvider, form.values[modelProvider]);
-  };
-
   useEffect(() => {
     loadModelConfig();
   }, []);
 
-  useImperativeHandle(ref, () => ({
-    save,
-  }));
-
-  return <FormFieldsComponent form={form} modelProvider={modelProvider} />;
+  return (
+    <Stack>
+      <FormFieldsComponent form={form} modelProvider={modelProvider} />
+      <ModelFormFieldSet form={form} modelProvider={modelProvider} />
+    </Stack>
+  );
 }
-
-export const ModelFormFields = React.forwardRef<
-  ModelFormSubFormRef,
-  ModelFormFields
->((props, ref) => FormFields({ ...props, ref }));
-ModelFormFields.displayName = "ModelFormFields";

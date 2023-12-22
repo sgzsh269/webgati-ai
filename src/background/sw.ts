@@ -45,7 +45,7 @@ chrome.runtime.onInstalled.addListener(async function () {
       [STORAGE_FIELD_AI_MODEL_CONFIG]: aiModelConfig,
     });
   }
-
+  aiService.initialize();
   aiService.updateAIModelConfig(aiModelConfig!);
 });
 

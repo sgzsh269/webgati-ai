@@ -3,11 +3,9 @@ import { ConversationSummaryBufferMemory } from "langchain/memory";
 import { VectorStore } from "langchain/vectorstores/base";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
 import {
-  STORAGE_FIELD_MODEL_PROVIDER,
   MODEL_PROVIDER_OPENAI,
   SUPPORTED_MODELS,
   MODEL_PROVIDER_ANTHROPIC,
-  MODEL_PROVIDER_OLLAMA,
 } from "./constants";
 
 export type InstallType = "development" | "normal";
@@ -164,13 +162,11 @@ export type SWState = {
 
 export type ModelProvider =
   | typeof MODEL_PROVIDER_OPENAI
-  | typeof MODEL_PROVIDER_ANTHROPIC
-  | typeof MODEL_PROVIDER_OLLAMA;
+  | typeof MODEL_PROVIDER_ANTHROPIC;
+// | typeof MODEL_PROVIDER_OLLAMA;
 
 export type AIModelConfig = {
-  [K in ModelProvider]: Record<string, any>;
-};
-
-export type ModelFormSubFormRef = {
-  save: () => Promise<void>;
+  [K in ModelProvider]: {
+    models: Array<{ label: string; modelName: string; hasVision: boolean }>;
+  } & Record<string, any>;
 };

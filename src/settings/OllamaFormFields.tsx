@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { Box, Stack, TextInput } from "@mantine/core";
 import { ModelProvider } from "../utils/types";
 

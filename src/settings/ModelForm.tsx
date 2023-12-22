@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React from "react";
 import { Box, Button, Grid, Stack, Select } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { showNotification } from "@mantine/notifications";
@@ -9,19 +9,17 @@ import {
   MODEL_PROVIDER_OLLAMA,
   MODEL_PROVIDER_OPENAI,
 } from "../utils/constants";
-import { ModelFormSubFormRef, ModelProvider } from "../utils/types";
-import { readAIModelConfig } from "../utils/storage";
+import { ModelProvider } from "../utils/types";
+import { readAIModelConfig, saveAIModelConfig } from "../utils/storage";
 import { ModelFormFields } from "./ModelFormFields";
 import { OpenAIFormFields } from "./OpenAIFormFields";
 import { AnthropicFormFields } from "./AnthropicFormFields";
-import { OllamaFormFields } from "./OllamaFormFields";
 
 export function ModelForm(): JSX.Element {
-  const subFormRef = useRef<ModelFormSubFormRef>(null);
   const [modelProvider, setModelProvider] = React.useState<ModelProvider>();
 
   const form = useForm({
-    initialValues: AI_MODEL_CONFIG_DEFAULT,
+    initialValues: {},
   });
 
   const loadModelConfig = async () => {
@@ -30,7 +28,7 @@ export function ModelForm(): JSX.Element {
   };
 
   const handleSubmit = async () => {
-    await subFormRef.current?.save();
+    await saveAIModelConfig(form.values);
     showNotification({
       message: "AI Model config saved!",
     });
@@ -63,7 +61,6 @@ export function ModelForm(): JSX.Element {
               {modelProvider === MODEL_PROVIDER_OPENAI && (
                 <ModelFormFields
                   form={form}
-                  ref={subFormRef}
                   modelProvider={MODEL_PROVIDER_OPENAI}
                   FormFieldsComponent={OpenAIFormFields}
                 />
@@ -71,20 +68,16 @@ export function ModelForm(): JSX.Element {
               {modelProvider === MODEL_PROVIDER_ANTHROPIC && (
                 <ModelFormFields
                   form={form}
-                  ref={subFormRef}
                   modelProvider={MODEL_PROVIDER_ANTHROPIC}
                   FormFieldsComponent={AnthropicFormFields}
                 />
               )}
-              {modelProvider === MODEL_PROVIDER_OLLAMA && (
-                <ModelFormFields
-                  form={form}
-                  ref={subFormRef}
-                  modelProvider={MODEL_PROVIDER_OLLAMA}
-                  FormFieldsComponent={OllamaFormFields}
-                />
+
+              {modelProvider && (
+                <Button type="submit" sx={{ marginTop: "16px", width: "100%" }}>
+                  Save
+                </Button>
               )}
-              {modelProvider && <Button type="submit">Save</Button>}
             </form>
           </Stack>
         </Grid.Col>

@@ -10,7 +10,6 @@ const ELEMENT_NAME = APP_NAME.toLowerCase()
 
 export const SIDE_PANEL_WIDTH = 400;
 
-export const STORAGE_FIELD_MODEL_PROVIDER = "modelProvider";
 export const STORAGE_FIELD_AI_MODEL_CONFIG = "aiModelConfig";
 
 export const CHATBOT_ROOT_ID = `${ELEMENT_NAME}-chatbot-root`;
@@ -48,18 +47,15 @@ export const SUPPORTED_MODELS = [
     value: ANTHROPIC_MODEL_ID_CLAUDE_INSTANT,
     label: "Anthropic Claude Instant",
   },
-  {
-    value: OLLAMA_MODEL_ID_MISTRAL,
-    label: "[Local] Ollama Mistral",
-  },
 ] as const;
 
 export const VISION_COMPATIBLE_MODELS = [OPENAI_MODEL_ID_GPT4];
 
 export const AI_MODEL_CONFIG_DEFAULT: AIModelConfig = {
-  [MODEL_PROVIDER_OPENAI]: {},
-  [MODEL_PROVIDER_ANTHROPIC]: {},
-  [MODEL_PROVIDER_OLLAMA]: {
-    baseUrl: OLLAMA_DEFAULT_BASE_URL,
+  [MODEL_PROVIDER_OPENAI]: {
+    models: [],
+  },
+  [MODEL_PROVIDER_ANTHROPIC]: {
+    models: [],
   },
 };

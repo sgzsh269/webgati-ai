@@ -17,7 +17,12 @@ import { ChatOpenAI } from "langchain/chat_models/openai";
 import { ChatAnthropic } from "langchain/chat_models/anthropic";
 import { ChatOllama } from "langchain/chat_models/ollama";
 import { BaseChatModel } from "langchain/chat_models/base";
-import { OLLAMA_DEFAULT_BASE_URL } from "../../../utils/constants";
+// import { HuggingFaceTransformersEmbeddings } from "langchain/embeddings/hf_transformers";
+// import { env } from "@xenova/transformers";
+
+// TODO
+// env.allowLocalModels = false;
+// env.backends.onnx.wasm.numThreads = 1;
 
 const MAX_RETRIES = 3;
 const DEFAULT_MAX_TOKENS = 4000;
@@ -25,10 +30,20 @@ const DEFAULT_MAX_TOKENS = 4000;
 export class AIService {
   private swService: SWService;
   private aiModelConfig: AIModelConfig | null;
+  // private hfEmbeddings: HuggingFaceTransformersEmbeddings;
+  // private hfTransformersPipeline: any;
 
   constructor(swService: SWService) {
     this.swService = swService;
     this.aiModelConfig = null;
+    // this.hfEmbeddings = new HuggingFaceTransformersEmbeddings({
+    //   modelName: "Xenova/all-MiniLM-L6-v2",
+    // });
+  }
+
+  async initialize(): Promise<void> {
+    // Running this initially to trigger downloading and caching of the model
+    // await this.hfEmbeddings.embedQuery("initialize");
   }
 
   updateAIModelConfig(aiModelConfig: AIModelConfig): void {

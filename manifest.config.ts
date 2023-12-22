@@ -40,7 +40,9 @@ export default defineManifest(async (env) => ({
     type: "module",
     persistent: false,
   },
-
+  content_security_policy: {
+    extension_pages: "script-src 'self' 'wasm-unsafe-eval'",
+  },
   permissions: ["activeTab", "storage", "tabs"],
   web_accessible_resources: [
     {

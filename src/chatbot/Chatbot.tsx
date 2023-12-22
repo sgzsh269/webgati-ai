@@ -13,6 +13,7 @@ import {
   useToggleSidePanel,
 } from "../utils/hooks";
 import {
+  AIModelConfig,
   ChatMessage,
   QueryMode,
   SWMessageBotClearMemory,
@@ -35,8 +36,8 @@ import html2canvas from "html2canvas";
 import {
   SIDE_PANEL_WIDTH,
   STORAGE_FIELD_AI_MODEL_CONFIG,
-  SUPPORTED_MODELS,
 } from "../utils/constants";
+import { readAIModelConfig } from "../utils/storage";
 
 const SELECTION_DEBOUNCE_DELAY_MS = 800;
 
@@ -48,6 +49,7 @@ export function Chatbot(): JSX.Element {
   const [url, setUrl] = useState<string | null>(null);
   const [queryMode, setQueryMode] = useState<QueryMode>("general");
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
+  const [modelSelectOptions, setModelSelectOptions] = useState<any[]>([]);
 
   const { showSidePanel, setShowSidePanel } = useToggleSidePanel();
 
@@ -211,17 +213,38 @@ export function Chatbot(): JSX.Element {
       type: "get-tab-id",
     });
     setTabId(tabId);
+
+    const aiModelConfig = await readAIModelConfig();
+    populateModelSelect(aiModelConfig);
   }, []);
+
+  const populateModelSelect = (aiModelConfig: AIModelConfig | null) => {
+    const modelOptions = [];
+
+    if (aiModelConfig) {
+      for (const [modelProvider, config] of Object.entries(aiModelConfig)) {
+        for (const item of config.models) {
+          modelOptions.push({
+            value: `${modelProvider}_${item.modelName}`,
+            label: item.label,
+            group: modelProvider.toUpperCase(),
+          });
+        }
+      }
+    }
+
+    setModelSelectOptions(modelOptions);
+  };
 
   const handleStorageChange = useCallback(
     (changes: { [key: string]: chrome.storage.StorageChange }) => {
       const aiModelConfigChanges = changes[STORAGE_FIELD_AI_MODEL_CONFIG];
 
       if (aiModelConfigChanges) {
-        init();
+        populateModelSelect(aiModelConfigChanges.newValue);
       }
     },
-    [init]
+    []
   );
 
   useStorageOnChanged(handleStorageChange);
@@ -269,7 +292,7 @@ export function Chatbot(): JSX.Element {
         <Select
           placeholder="Choose a model"
           nothingFound="No options"
-          data={SUPPORTED_MODELS}
+          data={modelSelectOptions}
           sx={{
             marginTop: "8px",
           }}
