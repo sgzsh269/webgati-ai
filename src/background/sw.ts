@@ -28,26 +28,6 @@ const splitter = RecursiveCharacterTextSplitter.fromLanguage("markdown", {
   chunkOverlap: 200,
 });
 
-/// INITIALIZATION
-
-const swService = new SWService();
-const aiService = new AIService(swService);
-
-chrome.runtime.onInstalled.addListener(async function () {
-  const management = await chrome.management.getSelf();
-  swService.swState.installType = management.installType as InstallType;
-
-  let aiModelConfig = await readAIModelConfig();
-  if (!aiModelConfig) {
-    aiModelConfig = AI_MODEL_CONFIG_DEFAULT;
-    await chrome.storage.local.set({
-      [STORAGE_FIELD_AI_MODEL_CONFIG]: aiModelConfig,
-    });
-  }
-  aiService.initialize();
-  aiService.updateAIModelConfig(aiModelConfig!);
-});
-
 /// STORAGE EVENTS
 
 chrome.storage.local.onChanged.addListener(function (changes) {
@@ -79,13 +59,6 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo) {
   // Re-init tab state when url changes or page is refreshed
   // When page is refreshed, only 'favIconUrl' field gets updated
   if (changeInfo.url || changeInfo.favIconUrl) {
-    if (
-      changeInfo.url?.includes("chrome-extension://") ||
-      changeInfo.url?.includes("chrome://")
-    ) {
-      return;
-    }
-
     const oldTabState = swService.swState.tabIdStateMap[tabId];
 
     let oldUrl = "";
@@ -248,7 +221,7 @@ async function invokeBot(msg: SWMessageBotExecute, tabState: TabState) {
 
     if (!tabState.botMemory) {
       tabState.botMemory = new ConversationSummaryBufferMemory({
-        llm: aiService.getCurrentLLM(tabState.tabId, true),
+        llm: aiService.getCurrentLLM(tabState.tabId, false),
         maxTokenLimit: 1000,
         returnMessages: true,
       });
@@ -333,3 +306,29 @@ function sendUrlChangeMessage(url: string) {
     }
   });
 }
+
+/// INITIALIZATION
+
+const swService = new SWService();
+const aiService = new AIService(swService);
+
+chrome.runtime.onInstalled.addListener(async function () {
+  const management = await chrome.management.getSelf();
+  swService.swState.installType = management.installType as InstallType;
+});
+
+async function init() {
+  let aiModelConfig = await readAIModelConfig();
+  if (!aiModelConfig) {
+    aiModelConfig = AI_MODEL_CONFIG_DEFAULT;
+    await chrome.storage.local.set({
+      [STORAGE_FIELD_AI_MODEL_CONFIG]: aiModelConfig,
+    });
+  }
+  aiService.initialize();
+  aiService.updateAIModelConfig(aiModelConfig!);
+
+  console.log("Background service initialized");
+}
+
+init().catch(console.error);

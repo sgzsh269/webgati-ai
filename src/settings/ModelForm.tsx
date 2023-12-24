@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Button, Grid, Stack, Select } from "@mantine/core";
+import { Box, Button, Grid, Stack, Select, Text } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { showNotification } from "@mantine/notifications";
 import { useEffect } from "react";
@@ -42,6 +42,10 @@ export function ModelForm(): JSX.Element {
       <Grid>
         <Grid.Col span={4}>
           <Stack spacing="sm">
+            <Text weight="bold">
+              NOTE: Make sure to click &apos;Save&apos; at the bottom after
+              making changes
+            </Text>
             <Select
               label="Configure Model Provider"
               placeholder="Configure Model Provider"

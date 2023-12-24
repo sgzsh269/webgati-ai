@@ -165,11 +165,13 @@ export type ModelProvider =
 export type ModelConfig = {
   label: string;
   modelName: string;
+  maxOutputTokens: number | undefined;
+  temperature: number;
   hasVision: boolean;
-};
+} & Record<string, any>;
 
 export type AIModelConfig = {
   [K in ModelProvider]: {
-    models: Array<ModelConfig>;
+    chatModels: Array<ModelConfig>;
   } & Record<string, any>;
 };

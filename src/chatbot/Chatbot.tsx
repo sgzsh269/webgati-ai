@@ -71,7 +71,12 @@ export function Chatbot(): JSX.Element {
   useSelectionDialog(
     (prompt) => {
       setShowSidePanel(true);
-      processUserPrompt(prompt);
+
+      if (disableInput) {
+        return;
+      }
+
+      processUserPrompt("general", prompt);
     },
     SELECTION_DEBOUNCE_DELAY_MS,
     queryMode
@@ -102,7 +107,7 @@ export function Chatbot(): JSX.Element {
     const aiModelConfig = await readAIModelConfig();
 
     if (aiModelConfig) {
-      const modelConfig = aiModelConfig[modelProvider].models.find(
+      const modelConfig = aiModelConfig[modelProvider].chatModels.find(
         (item) => item.modelName === modelName
       );
 
@@ -134,7 +139,7 @@ export function Chatbot(): JSX.Element {
     });
   };
 
-  const processUserPrompt = async (prompt: string) => {
+  const processUserPrompt = async (queryMode: QueryMode, prompt: string) => {
     setMessages((messages) => [...messages, { role: "user", content: prompt }]);
 
     if (queryMode === "webpage-text-qa") {
@@ -255,7 +260,7 @@ export function Chatbot(): JSX.Element {
     if (aiModelConfig) {
       for (const modelProvider of ["openai", "anthropic"] as ModelProvider[]) {
         const config = aiModelConfig[modelProvider];
-        for (const item of config.models) {
+        for (const item of config.chatModels) {
           modelOptions.push({
             value: `${modelProvider}_${item.modelName}`,
             label: item.label,
@@ -361,7 +366,7 @@ export function Chatbot(): JSX.Element {
           error={error}
           setError={setError}
           clearChatContext={clearChatContext}
-          processUserPrompt={processUserPrompt}
+          processUserPrompt={(prompt) => processUserPrompt(queryMode, prompt)}
           stopPromptProcessing={handleStopPromptProcessing}
           queryMode={queryMode}
           setQueryMode={setQueryMode}

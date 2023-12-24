@@ -27,29 +27,37 @@ export const OLLAMA_DEFAULT_BASE_URL = "http://localhost:11434";
 
 export const AI_MODEL_CONFIG_DEFAULT: AIModelConfig = {
   [MODEL_PROVIDER_OPENAI]: {
-    models: [
+    chatModels: [
       {
         label: "OpenAI GPT-3.5",
         modelName: "gpt-3.5-turbo",
+        maxOutputTokens: undefined,
+        temperature: 0,
         hasVision: false,
       },
       {
         label: "OpenAI GPT-4 w/ vision",
         modelName: "gpt-4-vision-preview",
+        maxOutputTokens: 4096,
+        temperature: 0,
         hasVision: true,
       },
     ],
   },
   [MODEL_PROVIDER_ANTHROPIC]: {
-    models: [
+    chatModels: [
       {
         label: "Anthropic Claude 2",
         modelName: "claude-2.1",
+        maxOutputTokens: 4096,
+        temperature: 0,
         hasVision: false,
       },
       {
         label: "Anthropic Claude Instant",
         modelName: "claude-instant-1.2",
+        maxOutputTokens: 4096,
+        temperature: 0,
         hasVision: false,
       },
     ],

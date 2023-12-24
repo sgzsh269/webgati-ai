@@ -21,13 +21,10 @@ export function ModelFormFieldSet({
   form,
   modelProvider,
 }: ModelFormFieldSetProps): JSX.Element {
-  const formFieldModels = `${modelProvider}.models`;
-  const models = form.values[modelProvider].models || [];
-
-  console.log("form", form.values);
+  const formFieldModels = `${modelProvider}.chatModels`;
+  const models = form.values[modelProvider].chatModels || [];
 
   const addModel = () => {
-    console.log(formFieldModels);
     form.insertListItem(formFieldModels, { label: "", modelName: "" });
   };
 
@@ -51,16 +48,31 @@ export function ModelFormFieldSet({
           <Stack spacing="sm">
             <TextInput
               label="Label"
-              placeholder="Label for display"
+              description="Label for display"
               required
               {...form.getInputProps(`${formFieldModels}.${index}.label`)}
             />
             <TextInput
               label="Model Name"
-              placeholder="Model Name from Provider API"
+              description="Model Name from Provider API"
               required
               {...form.getInputProps(`${formFieldModels}.${index}.modelName`)}
             />
+            <TextInput
+              label="Temperature"
+              description="Measure of randomness/creativity, 0 means deterministic."
+              placeholder="0"
+              required
+              {...form.getInputProps(`${formFieldModels}.${index}.temperature`)}
+            />
+            <TextInput
+              label="Max Ouput Tokens"
+              description="Max number of tokens to generate, leave blank for default."
+              {...form.getInputProps(
+                `${formFieldModels}.${index}.maxOutputTokens`
+              )}
+            />
+
             <Checkbox
               label="Has Vision"
               {...form.getInputProps(`${formFieldModels}.${index}.hasVision`, {

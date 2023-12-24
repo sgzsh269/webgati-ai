@@ -10,8 +10,8 @@ CONTEXT: {context}
 ----------`;
 
 export async function executeWebpageRAG(
-  fasterModel: BaseLanguageModel,
-  slowerModel: BaseLanguageModel,
+  streamingModel: BaseLanguageModel,
+  nonStreamingModel: BaseLanguageModel,
   memory: ConversationSummaryBufferMemory,
   vectorStore: VectorStore,
   prompt: string,
@@ -27,7 +27,7 @@ export async function executeWebpageRAG(
   ]);
 
   const chain = ConversationalRetrievalQAChain.fromLLM(
-    slowerModel,
+    streamingModel,
     vectorStore.asRetriever(),
     {
       returnSourceDocuments: true,
@@ -36,7 +36,7 @@ export async function executeWebpageRAG(
         prompt: chatPromptTemplate,
       },
       questionGeneratorChainOptions: {
-        llm: fasterModel,
+        llm: nonStreamingModel,
       },
     }
   );

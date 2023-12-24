@@ -2,6 +2,7 @@ import { ConversationSummaryBufferMemory } from "langchain/memory";
 import { VectorStore } from "langchain/vectorstores/base";
 import {
   AIModelConfig,
+  ModelConfig,
   SWMessageBotExecute,
   TabState,
 } from "../../../utils/types";
@@ -59,7 +60,9 @@ export class AIService {
     return tabState.model;
   }
 
-  getModelProviderConfig(tabId: number): Record<string, any> {
+  getModelProviderConfig(tabId: number): {
+    chatModels: Array<ModelConfig>;
+  } & Record<string, any> {
     const modelProvider = this.getModel(tabId).provider;
 
     if (!this.aiModelConfig) {
@@ -87,28 +90,34 @@ export class AIService {
     return this.hfEmbeddings;
   }
 
-  getCurrentLLM(tabId: number, useEfficient = false): BaseChatModel {
+  getCurrentLLM(tabId: number, streaming: boolean): BaseChatModel {
     const modelProvider = this.getModel(tabId).provider;
     const modelProviderConfig = this.getModelProviderConfig(tabId);
     const modelName = this.getModel(tabId).modelName;
+    const modelConfig = modelProviderConfig.chatModels.find(
+      (m) => m.modelName === modelName
+    );
+    const temperature = modelConfig?.temperature;
+    const maxOutputTokens = modelConfig?.maxOutputTokens;
 
     if (modelProvider === "openai") {
       return new ChatOpenAI({
-        modelName: useEfficient ? "gpt-3.5-turbo" : modelName,
+        modelName,
+        streaming,
+        temperature,
         openAIApiKey: modelProviderConfig.apiKey,
-        temperature: 0,
-        streaming: useEfficient ? false : true,
-        maxTokens: 4096,
+        maxTokens: maxOutputTokens,
         maxRetries: MAX_RETRIES,
       });
     }
     if (modelProvider === "anthropic") {
       return new ChatAnthropic({
-        modelName: useEfficient ? "claude-instant-1.2" : modelName,
+        modelName,
+        streaming,
+        temperature,
         anthropicApiKey: modelProviderConfig.apiKey,
-        temperature: 0,
+        maxTokensToSample: maxOutputTokens,
         maxRetries: MAX_RETRIES,
-        streaming: useEfficient ? false : true,
       });
     }
 
@@ -126,12 +135,11 @@ export class AIService {
   ): Promise<void> {
     const queryMode = msg.payload.queryMode;
 
-    const currentModel = this.getCurrentLLM(tabId);
-    const fasterModel = this.getCurrentLLM(tabId, true);
+    const streamingModel = this.getCurrentLLM(tabId, true);
 
     if (queryMode === "general") {
       await executeGeneralChat(
-        currentModel,
+        streamingModel,
         memory,
         msg.payload.prompt,
         abortController,
@@ -142,9 +150,11 @@ export class AIService {
         throw new Error("Vector store not found");
       }
 
+      const nonStreamingModel = this.getCurrentLLM(tabId, false);
+
       await executeWebpageRAG(
-        fasterModel,
-        currentModel,
+        streamingModel,
+        nonStreamingModel,
         memory,
         vectorStore,
         msg.payload.prompt,
@@ -155,7 +165,7 @@ export class AIService {
       await executeWebpageVisionChat(
         msg.payload.prompt,
         msg.payload.imageData,
-        currentModel,
+        streamingModel,
         abortController,
         memory,
         handleNewTokenCallback
@@ -164,7 +174,7 @@ export class AIService {
       await executeWebpageSummary(
         msg.payload.markdownContent,
         memory,
-        currentModel,
+        streamingModel,
         abortController,
         handleNewTokenCallback
       );
