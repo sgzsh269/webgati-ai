@@ -112,6 +112,11 @@ chrome.runtime.onMessage.addListener(function (
       handleModelUpdate(tabId, message);
       sendResponse("OK");
       break;
+    case "capture-visible-screen":
+      chrome.tabs
+        .captureVisibleTab({ format: "png" })
+        .then((dataUrl) => sendResponse(dataUrl));
+      break;
     case "keep-alive":
       sendResponse("OK");
       break;

@@ -42,8 +42,8 @@ import { IconAlertCircle, IconSettings, IconX } from "@tabler/icons-react";
 import { Logo } from "../components/Logo";
 import { openSettings } from "../utils/ui";
 import { useStorageOnChanged } from "../utils/hooks/useStorageOnChanged";
-import html2canvas from "html2canvas";
 import {
+  EXTENSION_Z_INDEX,
   SIDE_PANEL_WIDTH,
   STORAGE_FIELD_AI_MODEL_CONFIG,
 } from "../utils/constants";
@@ -65,8 +65,12 @@ export function Chatbot(): JSX.Element {
     apiKey?: string;
     config: ModelConfig;
   } | null>(null);
+  const [imageData, setImageData] = useState<string | null>(null);
+  const [showSidePanel, setShowSidePanel] = useState<boolean>(false);
 
-  const { showSidePanel, setShowSidePanel } = useToggleSidePanel();
+  useToggleSidePanel(() => {
+    setShowSidePanel((showSidePanel) => !showSidePanel);
+  });
 
   useSelectionDialog(
     (prompt) => {
@@ -149,16 +153,14 @@ export function Chatbot(): JSX.Element {
     }
 
     if (queryMode === "webpage-vqa") {
-      takeWebpageScreenshot().then((imageData) => {
-        swPort?.postMessage({
-          type: "bot-execute",
-          payload: {
-            queryMode,
-            prompt,
-            imageData,
-          } as SWMessagePayloadWebpageVQA,
-        } as SWMessageBotExecute);
-      });
+      swPort?.postMessage({
+        type: "bot-execute",
+        payload: {
+          queryMode,
+          prompt,
+          imageData,
+        } as SWMessagePayloadWebpageVQA,
+      } as SWMessageBotExecute);
     } else {
       swPort?.postMessage({
         type: "bot-execute",
@@ -168,12 +170,6 @@ export function Chatbot(): JSX.Element {
         } as SWMessagePayloadGeneral | SWMessagePayloadWebpageTextQA,
       } as SWMessageBotExecute);
     }
-  };
-
-  const takeWebpageScreenshot = async () => {
-    const canvas = await html2canvas(document.body, { useCORS: true });
-    const imgData = canvas.toDataURL("image/jpeg");
-    return imgData;
   };
 
   const processToken = (token: string, isDone: boolean) => {
@@ -288,7 +284,11 @@ export function Chatbot(): JSX.Element {
   useStorageOnChanged(handleStorageChange);
 
   const requiresApiKey = !selectedModel?.apiKey;
-  const disableInput = !selectedModel || requiresApiKey || isBotProcessing;
+  const disableInput =
+    !selectedModel ||
+    requiresApiKey ||
+    isBotProcessing ||
+    (queryMode === "webpage-vqa" && !imageData);
 
   return (
     <AppContext.Provider
@@ -297,6 +297,8 @@ export function Chatbot(): JSX.Element {
         webpageMarkdown,
         analyzeWebpage,
         clearChatContext,
+        setImageData,
+        setShowSidePanel,
       }}
     >
       <Paper
@@ -310,7 +312,7 @@ export function Chatbot(): JSX.Element {
           top: 0,
           right: 0,
           overflow: "auto",
-          zIndex: 2147483600,
+          zIndex: EXTENSION_Z_INDEX,
           boxShadow: "rgba(0, 0, 0, 0.24) 0px 3px 8px",
           fontFamily: "arial, sans-serif",
           fontSize: "16px",
@@ -371,6 +373,8 @@ export function Chatbot(): JSX.Element {
           queryMode={queryMode}
           setQueryMode={setQueryMode}
           modelConfig={selectedModel?.config || null}
+          imageData={imageData}
+          clearImageData={() => setImageData(null)}
         />
       </Paper>
     </AppContext.Provider>

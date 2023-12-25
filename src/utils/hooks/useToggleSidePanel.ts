@@ -1,16 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { SWMessage } from "../types";
 
-export function useToggleSidePanel(): {
-  showSidePanel: boolean;
-  setShowSidePanel: React.Dispatch<boolean>;
-} {
-  const [showSidePanel, setShowSidePanel] = useState<boolean>(false);
-
+export function useToggleSidePanel(onToggleSidePanel: () => void): void {
   useEffect(() => {
     const handleMessage = (message: SWMessage) => {
       if (message.type === "toggle-side-panel") {
-        setShowSidePanel((prevDisplay) => !prevDisplay);
+        onToggleSidePanel();
       }
     };
 
@@ -19,7 +14,5 @@ export function useToggleSidePanel(): {
     return () => {
       chrome.runtime.onMessage.removeListener(handleMessage);
     };
-  }, []);
-
-  return { showSidePanel, setShowSidePanel };
+  }, [onToggleSidePanel]);
 }

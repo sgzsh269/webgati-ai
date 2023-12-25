@@ -6,4 +6,6 @@ export const AppContext = React.createContext<AppContextType>({
   webpageMarkdown: "",
   analyzeWebpage: async () => {},
   clearChatContext: async () => {},
+  setImageData: (imageData) => imageData,
+  setShowSidePanel: (showSidePanel) => showSidePanel,
 });

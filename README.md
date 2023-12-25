@@ -4,15 +4,23 @@
 
 **NOTE**: This AI-powered extension is under active development, please verify the results as necessary and provide feedback to help us improve.
 
-Webgati AI is a Chrome extension for interactive web browsing. Whether you're researching, studying, or just exploring diverse content, Webgati AI is designed to efficiently guide you through webpages by providing quick summaries and answers directly from the content.
+Webgati AI is a Chrome & MS Edge browser extension for interactive web browsing. Whether you're researching, studying, or just exploring diverse content, Webgati AI is designed to efficiently guide you through webpages by providing quick summaries and answers directly from the content.
+
+### Features
 
 - Interactive Sidebar: Open a chat by clicking the extension icon, ask questions or seek summaries from any webpage effortlessly.
 
 - Content Selection Dialog: Highlight text, and a dialog box will pop up to allow direct interaction with the content.
 
-- Privacy-Focused: Direct integration with OpenAI API without storing user data ensures your interactions remain private and secure.
+- Privacy-Focused: Using your own API key, your chat is directly sent to model provider's API, not to any other server, thus ensuring your data remains private and secure. (Currently OpenAI and Anthropic are supported, more model providers will be available soon including private local models)
 
 - Open Source: Community-driven and transparent, allowing for continuous improvement and collective auditing.
+
+### Roadmap
+
+- Support for private local models
+- Index and chat with entire website 
+- Web agents for automated tasks
 
 ## DEMO
 

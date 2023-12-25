@@ -7,6 +7,9 @@ import {
   Stack,
   Group,
   SegmentedControl,
+  Image,
+  Text,
+  ActionIcon,
 } from "@mantine/core";
 import { QuestionTextArea } from "./QuestionTextArea";
 import { useEffect, useRef } from "react";
@@ -14,6 +17,7 @@ import { useForm } from "@mantine/form";
 import { Message } from "../chatbot/Message";
 import { useScrollIntoView } from "@mantine/hooks";
 import { QueryMode, ModelConfig } from "../utils/types";
+import { IconX } from "@tabler/icons-react";
 
 interface ChatUIProps {
   messages: { role: "user" | "ai"; content: string }[];
@@ -22,11 +26,13 @@ interface ChatUIProps {
   error: string;
   queryMode: QueryMode;
   modelConfig: ModelConfig | null;
+  imageData: string | null;
   setError: (error: string) => void;
   clearChatContext: () => void;
   processUserPrompt: (prompt: string) => Promise<void>;
   stopPromptProcessing: () => void;
   setQueryMode: (mode: QueryMode) => void;
+  clearImageData: () => void;
 }
 
 export const ChatUI = ({
@@ -36,11 +42,13 @@ export const ChatUI = ({
   error,
   queryMode,
   modelConfig,
+  imageData,
   setError,
   clearChatContext,
   processUserPrompt,
   stopPromptProcessing,
   setQueryMode,
+  clearImageData,
 }: ChatUIProps): JSX.Element => {
   const formRef = useRef<HTMLFormElement>(null);
   const [showLoader, setShowLoader] = useState(false);
@@ -200,6 +208,27 @@ export const ChatUI = ({
                 Send
               </Button>
             </Group>
+            {imageData && (
+              <Box
+                sx={{
+                  width: "fit-content",
+                  borderStyle: "solid",
+                  borderWidth: "0.5px",
+                }}
+              >
+                <ActionIcon onClick={clearImageData}>
+                  <IconX size="16px" />
+                </ActionIcon>
+                <Image
+                  width="100px"
+                  height="100px"
+                  fit="contain"
+                  src={imageData}
+                  withPlaceholder
+                  placeholder={<Text>Image preview unavailable</Text>}
+                />
+              </Box>
+            )}
           </Stack>
         </form>
       </Box>

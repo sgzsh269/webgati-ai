@@ -9,6 +9,7 @@ const ELEMENT_NAME = APP_NAME.toLowerCase()
   .replace(/[\[\]]/g, "");
 
 export const SIDE_PANEL_WIDTH = 400;
+export const EXTENSION_Z_INDEX = 2147483600;
 
 export const STORAGE_FIELD_AI_MODEL_CONFIG = "aiModelConfig";
 

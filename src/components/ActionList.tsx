@@ -4,6 +4,8 @@ import { CopyWebpageMarkdown } from "./ActionButtons/CopyWebpageMarkdown";
 import { AnalyzeWebpage } from "./ActionButtons/AnalyzeWebpage";
 import { SummarizeWebPage } from "./ActionButtons/SummarizeWebpage";
 import { QueryMode } from "../utils/types";
+import { PageSnipTool } from "./ActionButtons/PageSnipTool";
+import { PageCapture } from "./ActionButtons/PageCapture";
 
 interface ActionListProps {
   sx?: Sx;
@@ -19,6 +21,12 @@ export function ActionList({ sx, queryMode }: ActionListProps): JSX.Element {
             <AnalyzeWebpage />
             <CopyWebpageMarkdown />
             <SummarizeWebPage />
+          </>
+        )}
+        {queryMode === "webpage-vqa" && (
+          <>
+            <PageCapture />
+            <PageSnipTool />
           </>
         )}
       </Stack>

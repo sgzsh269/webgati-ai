@@ -22,6 +22,8 @@ export type AppContextType = {
   webpageMarkdown: string;
   analyzeWebpage: () => Promise<void>;
   clearChatContext: () => Promise<void>;
+  setImageData: (imageData: string) => void;
+  setShowSidePanel: (showSidePanel: boolean) => void;
 };
 
 export type IndexedData = {
@@ -63,6 +65,10 @@ export type SWMessageUpdateModelId = {
     modelProvider: ModelProvider;
     modelName: string;
   };
+};
+
+export type SWMessageCaptureVisibleScreen = {
+  type: "capture-visible-screen";
 };
 
 export type SWMessageBotExecute = {
@@ -135,7 +141,8 @@ export type SWMessage =
   | SWMessageBotStop
   | SWMessageBotClearMemory
   | SWMessageKeepAlive
-  | SWMessageUpdateModelId;
+  | SWMessageUpdateModelId
+  | SWMessageCaptureVisibleScreen;
 
 export type TabState = {
   tabId: number;

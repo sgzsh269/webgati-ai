@@ -16,6 +16,7 @@ import { useForm } from "@mantine/form";
 import React, { useRef } from "react";
 import { IconAsterisk, IconX } from "@tabler/icons-react";
 import {
+  EXTENSION_Z_INDEX,
   SELECTION_DIALOG_ROOT_ID,
   SELECTION_DIALOG_SHADOW_ROOT_ID,
 } from "../utils/constants";
@@ -124,7 +125,7 @@ export function SelectionDialog({
             position: "absolute",
             top: `${selection.bottom}px`,
             left: `${selection.left}px`,
-            zIndex: 2147483601,
+            zIndex: EXTENSION_Z_INDEX + 1,
             fontFamily: "arial, sans-serif",
             fontSize: "16px",
           }}
