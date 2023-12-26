@@ -1,4 +1,7 @@
-import { STORAGE_FIELD_AI_MODEL_CONFIG } from "./constants";
+import {
+  STORAGE_FIELD_AI_MODEL_CONFIG,
+  STORAGE_FIELD_LAST_SELECTED_MODEL_ID,
+} from "./constants";
 import { AIModelConfig, ModelProvider } from "./types";
 
 export async function readAIModelConfig(): Promise<AIModelConfig | null> {
@@ -22,5 +25,20 @@ export async function saveAIModelConfig(
 ): Promise<void> {
   await chrome.storage.local.set({
     [STORAGE_FIELD_AI_MODEL_CONFIG]: config,
+  });
+}
+
+export async function readLastSelectedModelId(): Promise<string | null> {
+  const result = await chrome.storage.local.get(
+    STORAGE_FIELD_LAST_SELECTED_MODEL_ID
+  );
+  return result[STORAGE_FIELD_LAST_SELECTED_MODEL_ID] || null;
+}
+
+export async function saveLastSelectedModelId(
+  selectedModelId: string
+): Promise<void> {
+  await chrome.storage.local.set({
+    [STORAGE_FIELD_LAST_SELECTED_MODEL_ID]: selectedModelId,
   });
 }

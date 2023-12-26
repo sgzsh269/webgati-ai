@@ -102,6 +102,11 @@ export const ChatUI = ({
     await processUserPrompt(values.question.trim());
   };
 
+  const handleSegmentedControlChange = (value: QueryMode) => {
+    setQueryMode(value);
+    clearImageData();
+  };
+
   return (
     <Box
       mt="8px"
@@ -170,7 +175,7 @@ export const ChatUI = ({
             ) : (
               <SegmentedControl
                 value={queryMode}
-                onChange={setQueryMode}
+                onChange={handleSegmentedControlChange}
                 size="sm"
                 color="blue"
                 data={[

@@ -12,6 +12,7 @@ export const SIDE_PANEL_WIDTH = 400;
 export const EXTENSION_Z_INDEX = 2147483600;
 
 export const STORAGE_FIELD_AI_MODEL_CONFIG = "aiModelConfig";
+export const STORAGE_FIELD_LAST_SELECTED_MODEL_ID = "lastSelectedModelId";
 
 export const CHATBOT_ROOT_ID = `${ELEMENT_NAME}-chatbot-root`;
 export const CHATBOT_SHADOW_ROOT_ID = `${ELEMENT_NAME}-chatbot-shadow-root`;

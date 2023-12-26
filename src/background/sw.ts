@@ -193,13 +193,17 @@ async function indexWebpage(
 function handleModelUpdate(tabId: number, message: SWMessageUpdateModel) {
   const tabState = swService.swState.tabIdStateMap[tabId] as TabState;
 
+  const oldModelProvider = tabState.model?.provider;
+
   tabState.model = {
     provider: message.payload.modelProvider,
     modelName: message.payload.modelName,
   };
 
-  tabState.botMemory = null;
-  tabState.vectorStore = null;
+  if (oldModelProvider !== message.payload.modelProvider) {
+    tabState.botMemory = null;
+    tabState.vectorStore = null;
+  }
 }
 
 function initTabState(tabId: number, url: string | null | undefined): TabState {

@@ -47,7 +47,11 @@ import {
   SIDE_PANEL_WIDTH,
   STORAGE_FIELD_AI_MODEL_CONFIG,
 } from "../utils/constants";
-import { readAIModelConfig } from "../utils/storage";
+import {
+  readAIModelConfig,
+  readLastSelectedModelId,
+  saveLastSelectedModelId,
+} from "../utils/storage";
 
 const SELECTION_DEBOUNCE_DELAY_MS = 800;
 
@@ -97,11 +101,12 @@ export function Chatbot(): JSX.Element {
 
   const handleSelectedModelChange = async (selectedModelId: string | null) => {
     setSelectedModelId(selectedModelId);
-    clearSessionState();
 
     if (!selectedModelId) {
       return;
     }
+
+    await saveLastSelectedModelId(selectedModelId);
 
     const [modelProvider, modelName] = selectedModelId.split("_") as [
       ModelProvider,
@@ -243,6 +248,9 @@ export function Chatbot(): JSX.Element {
 
     const aiModelConfig = await readAIModelConfig();
     populateModelSelect(aiModelConfig);
+
+    const lastSelectedModelId = await readLastSelectedModelId();
+    setSelectedModelId(lastSelectedModelId);
   }, []);
 
   const clearSessionState = useCallback(() => {
@@ -346,7 +354,7 @@ export function Chatbot(): JSX.Element {
           sx={{ marginTop: "8px", marginBottom: "8px" }}
         />
         <Divider />
-        {!selectedModel && (
+        {!selectedModelId && (
           <Alert icon={<IconAlertCircle size={16} />} color="red">
             Please select a model
           </Alert>
