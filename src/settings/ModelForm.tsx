@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import {
   AI_MODEL_CONFIG_DEFAULT,
   MODEL_PROVIDER_ANTHROPIC,
+  MODEL_PROVIDER_OLLAMA,
   MODEL_PROVIDER_OPENAI,
 } from "../utils/constants";
 import { ModelProvider } from "../utils/types";
@@ -13,6 +14,7 @@ import { readAIModelConfig, saveAIModelConfig } from "../utils/storage";
 import { ModelFormFields } from "./ModelFormFields";
 import { OpenAIFormFields } from "./OpenAIFormFields";
 import { AnthropicFormFields } from "./AnthropicFormFields";
+import { OllamaFormFields } from "./OllamaFormFields";
 
 export function ModelForm(): JSX.Element {
   const [modelProvider, setModelProvider] = React.useState<ModelProvider>();
@@ -52,6 +54,7 @@ export function ModelForm(): JSX.Element {
               data={[
                 { value: MODEL_PROVIDER_OPENAI, label: "OpenAI" },
                 { value: MODEL_PROVIDER_ANTHROPIC, label: "Anthropic" },
+                { value: MODEL_PROVIDER_OLLAMA, label: "Ollama" },
               ]}
               value={modelProvider}
               onChange={(value: ModelProvider) => {
@@ -72,6 +75,13 @@ export function ModelForm(): JSX.Element {
                   form={form}
                   modelProvider={MODEL_PROVIDER_ANTHROPIC}
                   FormFieldsComponent={AnthropicFormFields}
+                />
+              )}
+              {modelProvider === MODEL_PROVIDER_OLLAMA && (
+                <ModelFormFields
+                  form={form}
+                  modelProvider={MODEL_PROVIDER_OLLAMA}
+                  FormFieldsComponent={OllamaFormFields}
                 />
               )}
 

@@ -24,7 +24,6 @@ export const MODEL_PROVIDER_OPENAI = "openai";
 export const MODEL_PROVIDER_ANTHROPIC = "anthropic";
 
 export const MODEL_PROVIDER_OLLAMA = "ollama";
-export const OLLAMA_MODEL_ID_MISTRAL = "ollama_mistral";
 export const OLLAMA_DEFAULT_BASE_URL = "http://localhost:11434";
 
 export const AI_MODEL_CONFIG_DEFAULT: AIModelConfig = {
@@ -61,6 +60,25 @@ export const AI_MODEL_CONFIG_DEFAULT: AIModelConfig = {
         maxOutputTokens: 4096,
         temperature: 0,
         hasVision: false,
+      },
+    ],
+  },
+  [MODEL_PROVIDER_OLLAMA]: {
+    baseUrl: OLLAMA_DEFAULT_BASE_URL,
+    chatModels: [
+      {
+        label: "Ollama Mistral",
+        modelName: "mistral",
+        maxOutputTokens: undefined,
+        temperature: 0,
+        hasVision: false,
+      },
+      {
+        label: "Ollama Bakllava",
+        modelName: "bakllava",
+        maxOutputTokens: undefined,
+        temperature: 0,
+        hasVision: true,
       },
     ],
   },

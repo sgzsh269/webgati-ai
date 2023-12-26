@@ -262,7 +262,11 @@ export function Chatbot(): JSX.Element {
     const modelOptions = [];
 
     if (aiModelConfig) {
-      for (const modelProvider of ["openai", "anthropic"] as ModelProvider[]) {
+      for (const modelProvider of [
+        "openai",
+        "anthropic",
+        "ollama",
+      ] as ModelProvider[]) {
         const config = aiModelConfig[modelProvider];
         for (const item of config.chatModels) {
           modelOptions.push({
@@ -291,7 +295,8 @@ export function Chatbot(): JSX.Element {
 
   useStorageOnChanged(handleStorageChange);
 
-  const requiresApiKey = !selectedModel?.apiKey;
+  const requiresApiKey =
+    selectedModel?.modelProvider !== "ollama" && !selectedModel?.apiKey;
   const disableInput =
     !selectedModel ||
     requiresApiKey ||

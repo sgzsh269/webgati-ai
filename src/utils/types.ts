@@ -2,7 +2,11 @@ import { Document } from "langchain/document";
 import { ConversationSummaryBufferMemory } from "langchain/memory";
 import { VectorStore } from "langchain/vectorstores/base";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
-import { MODEL_PROVIDER_OPENAI, MODEL_PROVIDER_ANTHROPIC } from "./constants";
+import {
+  MODEL_PROVIDER_OPENAI,
+  MODEL_PROVIDER_ANTHROPIC,
+  MODEL_PROVIDER_OLLAMA,
+} from "./constants";
 
 export type InstallType = "development" | "normal";
 export type QueryMode =
@@ -166,8 +170,8 @@ export type SWState = {
 
 export type ModelProvider =
   | typeof MODEL_PROVIDER_OPENAI
-  | typeof MODEL_PROVIDER_ANTHROPIC;
-// | typeof MODEL_PROVIDER_OLLAMA;
+  | typeof MODEL_PROVIDER_ANTHROPIC
+  | typeof MODEL_PROVIDER_OLLAMA;
 
 export type ModelConfig = {
   label: string;

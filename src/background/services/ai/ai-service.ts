@@ -17,6 +17,7 @@ import { ChatOpenAI } from "langchain/chat_models/openai";
 import { ChatAnthropic } from "langchain/chat_models/anthropic";
 import { BaseChatModel } from "langchain/chat_models/base";
 import { HuggingFaceTransformersEmbeddings } from "langchain/embeddings/hf_transformers";
+import { ChatOllama } from "langchain/chat_models/ollama";
 import { env } from "@xenova/transformers";
 
 env.allowLocalModels = false;
@@ -121,6 +122,15 @@ export class AIService {
       });
     }
 
+    if (modelProvider === "ollama") {
+      return new ChatOllama({
+        baseUrl: modelProviderConfig.baseUrl,
+        model: modelName,
+        temperature,
+        maxRetries: MAX_RETRIES,
+      });
+    }
+
     throw new Error("Unsupported model provider: " + modelProvider);
   }
 
@@ -136,6 +146,7 @@ export class AIService {
     const queryMode = msg.payload.queryMode;
 
     const streamingModel = this.getCurrentLLM(tabId, true);
+    const modelProvider = this.getModel(tabId).provider;
 
     if (queryMode === "general") {
       await executeGeneralChat(
@@ -163,6 +174,7 @@ export class AIService {
       );
     } else if (queryMode === "webpage-vqa") {
       await executeWebpageVisionChat(
+        modelProvider,
         msg.payload.prompt,
         msg.payload.imageData,
         streamingModel,

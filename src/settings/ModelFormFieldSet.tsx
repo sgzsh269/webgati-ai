@@ -5,6 +5,7 @@ import {
   Card,
   Checkbox,
   Group,
+  NumberInput,
   Stack,
   Text,
   TextInput,
@@ -58,7 +59,7 @@ export function ModelFormFieldSet({
               required
               {...form.getInputProps(`${formFieldModels}.${index}.modelName`)}
             />
-            <TextInput
+            <NumberInput
               label="Temperature"
               description="Measure of randomness/creativity, 0 means deterministic."
               placeholder="0"
