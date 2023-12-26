@@ -68,9 +68,9 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo) {
     }
 
     if (changeInfo.url) {
-      sendUrlChangeMessage(changeInfo.url);
+      sendUrlChangeMessage(tabId, changeInfo.url);
     } else {
-      sendUrlChangeMessage(oldUrl!);
+      sendUrlChangeMessage(tabId, oldUrl!);
     }
   }
 });
@@ -299,20 +299,10 @@ function clearBotMemory(tabState: TabState) {
   tabState.botMemory?.clear();
 }
 
-function sendUrlChangeMessage(url: string) {
-  chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
-    try {
-      const activeTabId = tabs[0].id;
-
-      if (activeTabId) {
-        await chrome.tabs.sendMessage<SWMessageUrlChange>(activeTabId, {
-          type: "url-change",
-          payload: { url },
-        });
-      }
-    } catch (error: any) {
-      // no-op, UI component may not have been loaded due to delayed rendering
-    }
+async function sendUrlChangeMessage(tabId: number, url: string) {
+  await chrome.tabs.sendMessage<SWMessageUrlChange>(tabId, {
+    type: "url-change",
+    payload: { url },
   });
 }
 

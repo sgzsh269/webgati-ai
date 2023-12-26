@@ -113,6 +113,10 @@ export function Chatbot(): JSX.Element {
       string
     ];
 
+    if (modelProvider !== selectedModel?.modelProvider) {
+      clearSessionState();
+    }
+
     const aiModelConfig = await readAIModelConfig();
 
     if (aiModelConfig) {
