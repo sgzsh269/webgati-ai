@@ -182,7 +182,7 @@ export const ChatUI = ({
                   { label: "General", value: "general" },
                   { label: "Webpage", value: "webpage-text-qa" },
                   {
-                    label: "Screenshot",
+                    label: "Vision",
                     value: "webpage-vqa",
                     disabled: !modelConfig || !modelConfig.hasVision,
                   },

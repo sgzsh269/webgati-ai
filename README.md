@@ -12,6 +12,8 @@ Webgati AI is a Chrome & MS Edge browser extension for interactive web browsing.
 
 - Content Selection Dialog: Highlight text, and a dialog box will pop up to allow direct interaction with the content.
 
+- Vision chat: Easily ask questions about the visual information on the page (images, graphs, etc.) by using the extension to take a screenshot or select an area of the page.
+
 - Privacy-Focused: Using your own API key, your chat is directly sent to model provider's API, not to any other server, thus ensuring your data remains private and secure. (Currently OpenAI and Anthropic are supported, more model providers will be available soon including private local models)
 
 - Open Source: Community-driven and transparent, allowing for continuous improvement and collective auditing.
