@@ -31,6 +31,7 @@ import {
   SWMessageBotExecute,
   SWMessageBotStop,
   SWMessageBotTokenResponse,
+  SWMessageContentScriptInit,
   SWMessageGetTabId,
   SWMessageIndexWebpage,
   SWMessagePayloadGeneral,
@@ -60,7 +61,6 @@ export function Chatbot(): JSX.Element {
   const [messages, setMessages] = useState<Array<ChatMessage>>([]);
   const [webpageMarkdown, setWebpageMarkdown] = useState("");
   const [tabId, setTabId] = useState<number | null>(null);
-  const [url, setUrl] = useState<string | null>(null);
   const [queryMode, setQueryMode] = useState<QueryMode>("general");
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
   const [modelSelectOptions, setModelSelectOptions] = useState<any[]>([]);
@@ -90,9 +90,8 @@ export function Chatbot(): JSX.Element {
     queryMode
   );
 
-  useChromeTabUrlChange((url) => {
+  useChromeTabUrlChange(() => {
     init();
-    setUrl(url);
   });
 
   useEffect(() => {
@@ -225,7 +224,6 @@ export function Chatbot(): JSX.Element {
   const { swPort, isBotProcessing } = useSWMessaging(
     showSidePanel,
     tabId,
-    url,
     handleBotMessagePayload
   );
 
@@ -245,6 +243,10 @@ export function Chatbot(): JSX.Element {
   const init = useCallback(async () => {
     clearSessionState();
 
+    await chrome.runtime.sendMessage<SWMessageContentScriptInit>({
+      type: "content-script-init",
+    });
+
     const tabId = await chrome.runtime.sendMessage<SWMessageGetTabId>({
       type: "get-tab-id",
     });
@@ -254,7 +256,7 @@ export function Chatbot(): JSX.Element {
     populateModelSelect(aiModelConfig);
 
     const lastSelectedModelId = await readLastSelectedModelId();
-    setSelectedModelId(lastSelectedModelId);
+    handleSelectedModelChange(lastSelectedModelId);
   }, []);
 
   const clearSessionState = useCallback(() => {
@@ -268,8 +270,8 @@ export function Chatbot(): JSX.Element {
     if (aiModelConfig) {
       for (const modelProvider of [
         "openai",
-        "anthropic",
         "ollama",
+        "anthropic",
       ] as ModelProvider[]) {
         const config = aiModelConfig[modelProvider];
         for (const item of config.chatModels) {

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { SWMessage } from "../types";
 
-export function useChromeTabUrlChange(callback: (url: string) => void): void {
+export function useChromeTabUrlChange(callback: () => void): void {
   const callbackRef = useRef(callback);
 
   useEffect(() => {
@@ -11,7 +11,7 @@ export function useChromeTabUrlChange(callback: (url: string) => void): void {
   useEffect(() => {
     const listener = (message: SWMessage) => {
       if (message.type === "url-change") {
-        callbackRef.current(message.payload.url);
+        callbackRef.current();
       }
     };
 

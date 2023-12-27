@@ -67,11 +67,9 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo) {
       oldTabState.port?.disconnect();
     }
 
-    if (changeInfo.url) {
-      sendUrlChangeMessage(tabId, changeInfo.url);
-    } else {
-      sendUrlChangeMessage(tabId, oldUrl!);
-    }
+    const newUrl = changeInfo.url || oldUrl;
+
+    sendUrlChangeMessage(tabId, newUrl);
   }
 });
 
@@ -92,6 +90,10 @@ chrome.runtime.onMessage.addListener(function (
   const messageType = message.type;
 
   switch (message.type) {
+    case "content-script-init":
+      initTabState(tabId, url);
+      sendResponse("OK");
+      break;
     case "index-webpage":
       indexWebpage(tabId, url, message)
         .then(() =>
@@ -133,11 +135,10 @@ chrome.runtime.onConnect.addListener(function (port) {
     return;
   }
   const tabId = parseInt(port.name.split("-")[1]);
-  const sender = port.sender;
 
-  let tabState = swService.swState.tabIdStateMap[tabId] as TabState;
+  const tabState = swService.swState.tabIdStateMap[tabId] as TabState;
   if (!tabState) {
-    tabState = initTabState(tabId, sender!.url!);
+    throw new Error("No tab state found for tab id: " + tabId);
   }
 
   tabState.port = port;
@@ -300,10 +301,15 @@ function clearBotMemory(tabState: TabState) {
 }
 
 async function sendUrlChangeMessage(tabId: number, url: string) {
-  await chrome.tabs.sendMessage<SWMessageUrlChange>(tabId, {
-    type: "url-change",
-    payload: { url },
-  });
+  // Mainly to notify content script to take action when the url changes for SPA-based webpage
+  try {
+    await chrome.tabs.sendMessage<SWMessageUrlChange>(tabId, {
+      type: "url-change",
+      payload: { url },
+    });
+  } catch (error: any) {
+    // no-op, this is expected when the content script hasn't been injected yet on a fresh page load
+  }
 }
 
 /// INITIALIZATION
@@ -311,7 +317,10 @@ async function sendUrlChangeMessage(tabId: number, url: string) {
 const swService = new SWService();
 const aiService = new AIService(swService);
 
-chrome.runtime.onInstalled.addListener(async function () {
+chrome.runtime.onInstalled.addListener(async function (details) {
+  if (details.reason === "update") {
+    // TODO: Handle update
+  }
   const management = await chrome.management.getSelf();
   swService.swState.installType = management.installType as InstallType;
 });

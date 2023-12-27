@@ -54,7 +54,7 @@ export function ModelForm(): JSX.Element {
               data={[
                 { value: MODEL_PROVIDER_OPENAI, label: "OpenAI" },
                 { value: MODEL_PROVIDER_ANTHROPIC, label: "Anthropic" },
-                { value: MODEL_PROVIDER_OLLAMA, label: "Ollama" },
+                { value: MODEL_PROVIDER_OLLAMA, label: "[Local] Ollama" },
               ]}
               value={modelProvider}
               onChange={(value: ModelProvider) => {

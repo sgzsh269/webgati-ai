@@ -10,7 +10,6 @@ const SW_CONNECTION_INTERVAL = 15 * 1000;
 export function useSWMessaging(
   showSidePanel: boolean,
   tabId: number | null,
-  url: string | null,
   onMessage: (
     payload: SWMessageBotTokenResponse["payload"],
     isDone: boolean
@@ -95,7 +94,7 @@ export function useSWMessaging(
       port?.disconnect();
       stopSWKeepAliveInterval();
     };
-  }, [showSidePanel, tabId, url, onMessage]);
+  }, [showSidePanel, tabId, onMessage]);
 
   return { swPort, isBotProcessing };
 }

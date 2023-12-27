@@ -67,14 +67,14 @@ export const AI_MODEL_CONFIG_DEFAULT: AIModelConfig = {
     baseUrl: OLLAMA_DEFAULT_BASE_URL,
     chatModels: [
       {
-        label: "Ollama Mistral",
+        label: "[Local] Ollama Mistral",
         modelName: "mistral",
         maxOutputTokens: undefined,
         temperature: 0,
         hasVision: false,
       },
       {
-        label: "Ollama Bakllava",
+        label: "[Local] Ollama Bakllava",
         modelName: "bakllava",
         maxOutputTokens: undefined,
         temperature: 0,

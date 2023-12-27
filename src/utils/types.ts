@@ -133,6 +133,10 @@ export type SWMessagePayloadSummary = {
   markdownContent: string;
 };
 
+export type SWMessageContentScriptInit = {
+  type: "content-script-init";
+};
+
 export type SWMessage =
   | SWMessageToggleSidePanel
   | SWMessageUrlChange
@@ -146,7 +150,8 @@ export type SWMessage =
   | SWMessageBotClearMemory
   | SWMessageKeepAlive
   | SWMessageUpdateModelId
-  | SWMessageCaptureVisibleScreen;
+  | SWMessageCaptureVisibleScreen
+  | SWMessageContentScriptInit;
 
 export type TabState = {
   tabId: number;
