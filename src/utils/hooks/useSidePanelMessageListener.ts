@@ -1,17 +1,11 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { SWMessage } from "../types";
 
-export function useChromeTabUrlChange(callback: () => void): void {
-  const callbackRef = useRef(callback);
-
-  useEffect(() => {
-    callbackRef.current = callback;
-  }, [callback]);
-
+export function useSidePanelMessageListener(onUrlChange: () => void): void {
   useEffect(() => {
     const listener = (message: SWMessage) => {
       if (message.type === "url-change") {
-        callbackRef.current();
+        onUrlChange();
       }
     };
 
@@ -20,5 +14,5 @@ export function useChromeTabUrlChange(callback: () => void): void {
     return () => {
       chrome.runtime.onMessage.removeListener(listener);
     };
-  }, []);
+  }, [onUrlChange]);
 }

@@ -11,10 +11,10 @@ import {
   Text,
   ActionIcon,
 } from "@mantine/core";
-import { QuestionTextArea } from "./QuestionTextArea";
+import { QuestionTextArea } from "../common/QuestionTextArea";
 import { useEffect, useRef } from "react";
 import { useForm } from "@mantine/form";
-import { Message } from "../chatbot/Message";
+import { Message } from "./Message";
 import { useScrollIntoView } from "@mantine/hooks";
 import { QueryMode, ModelConfig } from "../utils/types";
 import { IconX } from "@tabler/icons-react";

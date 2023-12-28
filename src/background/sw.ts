@@ -9,7 +9,6 @@ import {
   SWMessageBotExecute,
   SWMessageBotProcessing,
   SWMessageBotTokenResponse,
-  SWMessageToggleSidePanel,
   SWMessageUrlChange,
   TabState,
   SWMessageUpdateModelId as SWMessageUpdateModel,
@@ -42,20 +41,15 @@ chrome.storage.local.onChanged.addListener(function (changes) {
 
 /// BROWSER ACTION EVENTS (EXTENSION ICON CLICK)
 
-chrome.action.onClicked.addListener(async function (tab) {
-  try {
-    if (tab.id) {
-      await chrome.tabs.sendMessage<SWMessageToggleSidePanel>(tab.id, {
-        type: "toggle-side-panel",
-      });
-    }
-  } catch (error: any) {
-    console.log(`Error: No webpage loaded in tab - ${error.message}`);
-  }
-});
-
 /// TAB EVENTS
-chrome.tabs.onUpdated.addListener(function (tabId, changeInfo) {
+chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
+  if (tab.url) {
+    await chrome.sidePanel.setOptions({
+      tabId: tab.id,
+      enabled: true,
+      path: "sidepanel.html",
+    });
+  }
   // Re-init tab state when url changes or page is refreshed
   // When page is refreshed, only 'favIconUrl' field gets updated
   if (changeInfo.url || changeInfo.favIconUrl) {
@@ -85,17 +79,21 @@ chrome.runtime.onMessage.addListener(function (
   sender,
   sendResponse
 ) {
-  const tabId = sender.tab?.id as number;
-  const url = sender.tab?.url as string;
-  const messageType = message.type;
-
   switch (message.type) {
-    case "content-script-init":
-      initTabState(tabId, url);
+    case "sp_side-panel-init":
+      initTabState(message.payload.tabId, message.payload.url);
       sendResponse("OK");
       break;
-    case "index-webpage":
-      indexWebpage(tabId, url, message)
+    case "sp_update-model":
+      handleModelUpdate(message);
+      sendResponse("OK");
+      break;
+
+    case "sp_keep-alive":
+      sendResponse("OK");
+      break;
+    case "sp_index-webpage":
+      indexWebpage(sender.tab!.id!, message)
         .then(() =>
           sendResponse({
             status: "success",
@@ -107,25 +105,14 @@ chrome.runtime.onMessage.addListener(function (
           })
         );
       break;
-    case "get-tab-id":
-      sendResponse(tabId);
-      break;
-    case "update-model":
-      handleModelUpdate(tabId, message);
-      sendResponse("OK");
-      break;
-    case "capture-visible-screen":
+    case "cs_capture-visible-screen":
+      console.log("capture-visible-screen");
       chrome.tabs
-        .captureVisibleTab({ format: "png" })
-        .then((dataUrl) => sendResponse(dataUrl));
+        .captureVisibleTab({
+          format: "png",
+        })
+        .then((imageData) => sendResponse(imageData));
       break;
-    case "keep-alive":
-      sendResponse("OK");
-      break;
-    default:
-      throw new Error(
-        `Message type not implemented for chrome.runtime.onMessage listnener: ${messageType}`
-      );
   }
   return true;
 });
@@ -174,11 +161,7 @@ function handlePortDisconnect(tabState: TabState) {
   tabState.port = null;
 }
 
-async function indexWebpage(
-  tabId: number,
-  url: string,
-  message: SWMessageIndexWebpage
-) {
+async function indexWebpage(tabId: number, message: SWMessageIndexWebpage) {
   const pageMarkdown = message.payload.pageMarkdown;
 
   const webpageDocs = await splitter.createDocuments([pageMarkdown]);
@@ -191,8 +174,10 @@ async function indexWebpage(
   );
 }
 
-function handleModelUpdate(tabId: number, message: SWMessageUpdateModel) {
-  const tabState = swService.swState.tabIdStateMap[tabId] as TabState;
+function handleModelUpdate(message: SWMessageUpdateModel) {
+  const tabState = swService.swState.tabIdStateMap[
+    message.payload.tabId
+  ] as TabState;
 
   const oldModelProvider = tabState.model?.provider;
 
@@ -338,5 +323,9 @@ async function init() {
 
   console.log("Background service initialized");
 }
+
+chrome.sidePanel.setPanelBehavior({
+  openPanelOnActionClick: true,
+});
 
 init().catch(console.error);

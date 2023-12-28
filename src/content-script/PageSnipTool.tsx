@@ -1,9 +1,21 @@
-import React from "react";
-import { ActionButton } from "./ActionButton";
-import { useContext } from "react";
-import { AppContext } from "../../utils/app-context";
-import { EXTENSION_Z_INDEX } from "../../utils/constants";
-import { SWMessageCaptureVisibleScreen } from "../../utils/types";
+import { useEffect } from "react";
+import { EXTENSION_Z_INDEX } from "../utils/constants";
+import { SWMessageCaptureVisibleScreen } from "../utils/types";
+
+interface PageSnipToolProps {
+  show: boolean;
+  onImage: (imageData: string) => void;
+}
+
+export function PageSnipTool({ show, onImage }: PageSnipToolProps): null {
+  useEffect(() => {
+    if (show) {
+      startClipTool(onImage);
+    }
+  });
+
+  return null;
+}
 
 function startClipTool(onImage: (imageData: string) => void) {
   let startX: number, startY: number, currentX: number, currentY: number;
@@ -102,6 +114,8 @@ function startClipTool(onImage: (imageData: string) => void) {
       }, 1000);
     });
 
+    console.log("imageData", imageData);
+
     const img = new Image();
     img.onload = function () {
       const canvas = document.createElement("canvas");
@@ -140,25 +154,4 @@ function startClipTool(onImage: (imageData: string) => void) {
     };
     img.src = imageData;
   });
-}
-
-export function PageSnipTool(): JSX.Element {
-  const { setImageData, setShowSidePanel } = useContext(AppContext);
-
-  const handleClick = async () => {
-    setShowSidePanel(false);
-    startClipTool((imageData) => {
-      setImageData(imageData);
-      setShowSidePanel(true);
-    });
-  };
-
-  return (
-    <ActionButton
-      label="Select using Snip Tool"
-      onClick={handleClick}
-      notificationMessage=""
-      isLoading={false}
-    />
-  );
 }

@@ -10,6 +10,11 @@ export default defineConfig(async ({ mode }) => {
     plugins: [react(), crx({ manifest: defineManifest })],
     build: {
       target: ["esnext"],
+      rollupOptions: {
+        input: {
+          sidepanel: "sidepanel.html",
+        },
+      },
     },
   };
 });

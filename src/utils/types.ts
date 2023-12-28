@@ -22,12 +22,12 @@ export type BotMessageType =
   | "summary";
 
 export type AppContextType = {
+  tabId: number | null;
   swPort: chrome.runtime.Port | null;
   webpageMarkdown: string;
   analyzeWebpage: () => Promise<void>;
   clearChatContext: () => Promise<void>;
   setImageData: (imageData: string) => void;
-  setShowSidePanel: (showSidePanel: boolean) => void;
 };
 
 export type IndexedData = {
@@ -57,22 +57,23 @@ export type SWMessageGetTabId = {
 };
 
 export type SWMessageIndexWebpage = {
-  type: "index-webpage";
+  type: "sp_index-webpage";
   payload: {
     pageMarkdown: string;
   };
 };
 
 export type SWMessageUpdateModelId = {
-  type: "update-model";
+  type: "sp_update-model";
   payload: {
+    tabId: number;
     modelProvider: ModelProvider;
     modelName: string;
   };
 };
 
 export type SWMessageCaptureVisibleScreen = {
-  type: "capture-visible-screen";
+  type: "cs_capture-visible-screen";
 };
 
 export type SWMessageBotExecute = {
@@ -109,7 +110,19 @@ export type SWMessageBotClearMemory = {
 };
 
 export type SWMessageKeepAlive = {
-  type: "keep-alive";
+  type: "sp_keep-alive";
+};
+
+export type SWMessageSidePanelInit = {
+  type: "sp_side-panel-init";
+  payload: {
+    tabId: number;
+    url: string;
+  };
+};
+
+export type SWMessageStartPageSnipTool = {
+  type: "start-page-snip-tool";
 };
 
 export type SWMessagePayloadGeneral = {
@@ -133,10 +146,6 @@ export type SWMessagePayloadSummary = {
   markdownContent: string;
 };
 
-export type SWMessageContentScriptInit = {
-  type: "content-script-init";
-};
-
 export type SWMessage =
   | SWMessageToggleSidePanel
   | SWMessageUrlChange
@@ -151,7 +160,8 @@ export type SWMessage =
   | SWMessageKeepAlive
   | SWMessageUpdateModelId
   | SWMessageCaptureVisibleScreen
-  | SWMessageContentScriptInit;
+  | SWMessageSidePanelInit
+  | SWMessageStartPageSnipTool;
 
 export type TabState = {
   tabId: number;

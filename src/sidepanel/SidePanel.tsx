@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   ActionIcon,
   Alert,
+  Badge,
   Button,
   Divider,
   Group,
@@ -11,15 +12,14 @@ import {
   Text,
 } from "@mantine/core";
 
-import { ChatUI } from "../components/ChatUI";
+import { ChatUI } from "./ChatUI";
 import { generatePageMarkdown } from "../utils/markdown";
-import { ActionList } from "../components/ActionList";
+import { ActionList } from "./ActionList";
 import { AppContext } from "../utils/app-context";
 import {
-  useSWMessaging,
-  useChromeTabUrlChange,
-  useSelectionDialog,
-  useToggleSidePanel,
+  useChatMessaging,
+  useSidePanelMessageListener,
+  useStorageOnChanged,
 } from "../utils/hooks";
 import {
   AIModelConfig,
@@ -31,36 +31,26 @@ import {
   SWMessageBotExecute,
   SWMessageBotStop,
   SWMessageBotTokenResponse,
-  SWMessageContentScriptInit,
-  SWMessageGetTabId,
+  SWMessageSidePanelInit,
   SWMessageIndexWebpage,
   SWMessagePayloadGeneral,
   SWMessagePayloadWebpageTextQA,
   SWMessagePayloadWebpageVQA,
   SWMessageUpdateModelId,
 } from "../utils/types";
-import { IconAlertCircle, IconSettings, IconX } from "@tabler/icons-react";
-import { Logo } from "../components/Logo";
+import { IconAlertCircle, IconSettings } from "@tabler/icons-react";
 import { openSettings } from "../utils/ui";
-import { useStorageOnChanged } from "../utils/hooks/useStorageOnChanged";
-import {
-  EXTENSION_Z_INDEX,
-  SIDE_PANEL_WIDTH,
-  STORAGE_FIELD_AI_MODEL_CONFIG,
-} from "../utils/constants";
+import { STORAGE_FIELD_AI_MODEL_CONFIG } from "../utils/constants";
 import {
   readAIModelConfig,
   readLastSelectedModelId,
   saveLastSelectedModelId,
 } from "../utils/storage";
 
-const SELECTION_DEBOUNCE_DELAY_MS = 800;
-
-export function Chatbot(): JSX.Element {
+export function SidePanel(): JSX.Element {
   const [error, setError] = useState("");
   const [messages, setMessages] = useState<Array<ChatMessage>>([]);
   const [webpageMarkdown, setWebpageMarkdown] = useState("");
-  const [tabId, setTabId] = useState<number | null>(null);
   const [queryMode, setQueryMode] = useState<QueryMode>("general");
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
   const [modelSelectOptions, setModelSelectOptions] = useState<any[]>([]);
@@ -70,81 +60,17 @@ export function Chatbot(): JSX.Element {
     config: ModelConfig;
   } | null>(null);
   const [imageData, setImageData] = useState<string | null>(null);
-  const [showSidePanel, setShowSidePanel] = useState<boolean>(false);
+  const [tabId, setTabId] = useState<number | null>(null);
 
-  useToggleSidePanel(() => {
-    setShowSidePanel((showSidePanel) => !showSidePanel);
-  });
-
-  useSelectionDialog(
-    (prompt) => {
-      setShowSidePanel(true);
-
-      if (disableInput) {
-        return;
-      }
-
-      processUserPrompt("general", prompt);
-    },
-    SELECTION_DEBOUNCE_DELAY_MS,
-    queryMode
-  );
-
-  useChromeTabUrlChange(() => {
-    init();
-  });
-
-  useEffect(() => {
-    init();
-  }, []);
-
-  const handleSelectedModelChange = async (selectedModelId: string | null) => {
-    setSelectedModelId(selectedModelId);
-
-    if (!selectedModelId) {
-      return;
-    }
-
-    await saveLastSelectedModelId(selectedModelId);
-
-    const [modelProvider, modelName] = selectedModelId.split("_") as [
-      ModelProvider,
-      string
-    ];
-
-    if (modelProvider !== selectedModel?.modelProvider) {
-      clearSessionState();
-    }
-
-    const aiModelConfig = await readAIModelConfig();
-
-    if (aiModelConfig) {
-      const modelConfig = aiModelConfig[modelProvider].chatModels.find(
-        (item) => item.modelName === modelName
-      );
-
-      await chrome.runtime.sendMessage<SWMessageUpdateModelId>({
-        type: "update-model",
-        payload: {
-          modelProvider,
-          modelName,
-        },
-      });
-
-      setSelectedModel({
-        modelProvider,
-        apiKey: aiModelConfig[modelProvider].apiKey,
-        config: modelConfig as ModelConfig,
-      });
-    }
-  };
+  const manifest = chrome.runtime.getManifest();
+  const version = manifest.version;
 
   const analyzeWebpage = async () => {
     const pageMarkdown = await generatePageMarkdown("general");
     setWebpageMarkdown(pageMarkdown);
 
     await chrome.runtime.sendMessage<SWMessageIndexWebpage>({
-      type: "index-webpage",
+      type: "sp_index-webpage",
       payload: {
         pageMarkdown,
       },
@@ -206,10 +132,6 @@ export function Chatbot(): JSX.Element {
     });
   };
 
-  const handleCloseClick = () => {
-    setShowSidePanel(false);
-  };
-
   const handleBotMessagePayload = useCallback(
     (payload: SWMessageBotTokenResponse["payload"], isDone: boolean) => {
       if (payload.error) {
@@ -221,8 +143,7 @@ export function Chatbot(): JSX.Element {
     []
   );
 
-  const { swPort, isBotProcessing } = useSWMessaging(
-    showSidePanel,
+  const { swPort, isBotProcessing } = useChatMessaging(
     tabId,
     handleBotMessagePayload
   );
@@ -240,29 +161,81 @@ export function Chatbot(): JSX.Element {
     setMessages([]);
   }, [swPort]);
 
+  const clearSessionState = useCallback(() => {
+    setWebpageMarkdown("");
+    setMessages([]);
+  }, []);
+
+  const handleSelectedModelChange = useCallback(
+    async (tabId: number, selectedModelId: string | null) => {
+      setSelectedModelId(selectedModelId);
+
+      if (!selectedModelId) {
+        return;
+      }
+
+      await saveLastSelectedModelId(selectedModelId);
+
+      const [modelProvider, modelName] = selectedModelId.split("_") as [
+        ModelProvider,
+        string
+      ];
+
+      if (modelProvider !== selectedModel?.modelProvider) {
+        clearSessionState();
+      }
+
+      const aiModelConfig = await readAIModelConfig();
+
+      await chrome.runtime.sendMessage<SWMessageUpdateModelId>({
+        type: "sp_update-model",
+        payload: {
+          tabId,
+          modelProvider,
+          modelName,
+        },
+      });
+
+      if (aiModelConfig) {
+        const modelConfig = aiModelConfig[modelProvider].chatModels.find(
+          (item) => item.modelName === modelName
+        );
+
+        setSelectedModel({
+          modelProvider,
+          apiKey: aiModelConfig[modelProvider].apiKey,
+          config: modelConfig as ModelConfig,
+        });
+      }
+    },
+    [selectedModel, clearSessionState]
+  );
+
   const init = useCallback(async () => {
     clearSessionState();
 
-    await chrome.runtime.sendMessage<SWMessageContentScriptInit>({
-      type: "content-script-init",
+    const tab = (
+      await chrome.tabs.query({ active: true, currentWindow: true })
+    ).at(0);
+    const tabId = tab!.id!;
+    const url = tab!.url!;
+
+    await chrome.runtime.sendMessage<SWMessageSidePanelInit>({
+      type: "sp_side-panel-init",
+      payload: {
+        tabId,
+        url,
+      },
     });
 
-    const tabId = await chrome.runtime.sendMessage<SWMessageGetTabId>({
-      type: "get-tab-id",
-    });
     setTabId(tabId);
 
     const aiModelConfig = await readAIModelConfig();
     populateModelSelect(aiModelConfig);
 
     const lastSelectedModelId = await readLastSelectedModelId();
-    handleSelectedModelChange(lastSelectedModelId);
-  }, []);
-
-  const clearSessionState = useCallback(() => {
-    setWebpageMarkdown("");
-    setMessages([]);
-  }, []);
+    handleSelectedModelChange(tabId, lastSelectedModelId);
+  }, [clearSessionState, handleSelectedModelChange]);
 
   const populateModelSelect = (aiModelConfig: AIModelConfig | null) => {
     const modelOptions = [];
@@ -293,13 +266,26 @@ export function Chatbot(): JSX.Element {
 
       if (aiModelConfigChanges) {
         populateModelSelect(aiModelConfigChanges.newValue);
-        handleSelectedModelChange(selectedModelId);
+
+        if (tabId) {
+          handleSelectedModelChange(tabId, selectedModelId);
+        }
       }
     },
-    [selectedModelId]
+    [tabId, selectedModelId, handleSelectedModelChange]
   );
 
   useStorageOnChanged(handleStorageChange);
+
+  const handleUrlChange = useCallback(() => {
+    init();
+  }, [init]);
+
+  useSidePanelMessageListener(handleUrlChange);
+
+  useEffect(() => {
+    init();
+  }, []);
 
   const requiresApiKey =
     selectedModel?.modelProvider !== "ollama" && !selectedModel?.apiKey;
@@ -312,27 +298,25 @@ export function Chatbot(): JSX.Element {
   return (
     <AppContext.Provider
       value={{
+        tabId,
         swPort,
         webpageMarkdown,
         analyzeWebpage,
         clearChatContext,
         setImageData,
-        setShowSidePanel,
       }}
     >
       <Paper
         sx={{
-          display: showSidePanel ? "flex" : "none",
+          display: "flex",
           padding: "8px",
           flexDirection: "column",
           position: "fixed",
           height: "100vh",
-          width: SIDE_PANEL_WIDTH + "px",
+          width: "100%",
           top: 0,
           right: 0,
           overflow: "auto",
-          zIndex: EXTENSION_Z_INDEX,
-          boxShadow: "rgba(0, 0, 0, 0.24) 0px 3px 8px",
           fontFamily: "arial, sans-serif",
           fontSize: "16px",
         }}
@@ -344,10 +328,12 @@ export function Chatbot(): JSX.Element {
           <ActionIcon variant="transparent" onClick={openSettings}>
             <IconSettings size="24px" />
           </ActionIcon>
-          <Logo />
-          <ActionIcon variant="transparent">
-            <IconX size="24px" onClick={handleCloseClick} />
-          </ActionIcon>
+          <Group sx={{}}>
+            <Text size="sm">v{version}</Text>
+            <Badge color="yellow" size="sm">
+              BETA
+            </Badge>
+          </Group>
         </Group>
         <Select
           placeholder="Choose a model"
@@ -357,7 +343,7 @@ export function Chatbot(): JSX.Element {
             marginTop: "8px",
           }}
           value={selectedModelId}
-          onChange={handleSelectedModelChange}
+          onChange={(value) => handleSelectedModelChange(tabId!, value)}
           searchable
         />
         <ActionList
@@ -370,7 +356,7 @@ export function Chatbot(): JSX.Element {
             Please select a model
           </Alert>
         )}
-        {selectedModel && requiresApiKey && (
+        {selectedModelId && requiresApiKey && (
           <Alert icon={<IconAlertCircle size={16} />} color="orange">
             <Text size="sm">
               Please set API Key for selected model in settings

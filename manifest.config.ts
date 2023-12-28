@@ -29,12 +29,12 @@ export default defineManifest(async (env) => ({
     default_title: APP_NAME,
   },
   options_page: "settings.html",
-  content_scripts: [
-    {
-      js: ["src/chatbot/index.tsx"],
-      matches: ["http://*/*", "https://*/*"],
-    },
-  ],
+  // content_scripts: [
+  //   {
+  //     js: ["src/content-script/index.tsx"],
+  //     matches: ["http://*/*", "https://*/*"],
+  //   },
+  // ],
   background: {
     service_worker: "src/background/sw.ts",
     type: "module",
@@ -43,8 +43,8 @@ export default defineManifest(async (env) => ({
   content_security_policy: {
     extension_pages: "script-src 'self' 'wasm-unsafe-eval'",
   },
-  host_permissions: ["http://*/*", "https://*/*"],
-  permissions: ["activeTab", "storage", "tabs", "scripting"],
+  host_permissions: ["<all_urls>"],
+  permissions: ["activeTab", "storage", "tabs", "sidePanel"],
   web_accessible_resources: [
     {
       resources: ["settings.html"],

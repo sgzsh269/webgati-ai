@@ -7,8 +7,7 @@ import {
 
 const SW_CONNECTION_INTERVAL = 15 * 1000;
 
-export function useSWMessaging(
-  showSidePanel: boolean,
+export function useChatMessaging(
   tabId: number | null,
   onMessage: (
     payload: SWMessageBotTokenResponse["payload"],
@@ -22,7 +21,7 @@ export function useSWMessaging(
   const [isBotProcessing, setIsBotProcessing] = useState(false);
 
   useEffect(() => {
-    if (!showSidePanel || !tabId) {
+    if (!tabId) {
       return;
     }
 
@@ -35,7 +34,7 @@ export function useSWMessaging(
       }
 
       port = chrome.runtime.connect({
-        name: `tab-${tabId?.toString()}`,
+        name: `tab-${tabId.toString()}`,
       });
 
       port?.onMessage.addListener(handleMessage);
@@ -78,7 +77,7 @@ export function useSWMessaging(
 
     const swKeepAlive = async () => {
       await chrome.runtime.sendMessage<SWMessageKeepAlive>({
-        type: "keep-alive",
+        type: "sp_keep-alive",
       });
     };
 
@@ -94,7 +93,7 @@ export function useSWMessaging(
       port?.disconnect();
       stopSWKeepAliveInterval();
     };
-  }, [showSidePanel, tabId, onMessage]);
+  }, [tabId, onMessage]);
 
   return { swPort, isBotProcessing };
 }

@@ -3,22 +3,15 @@ import { AIModelConfig } from "./types";
 const manifest = chrome.runtime.getManifest();
 
 export const APP_NAME = manifest.name;
-const ELEMENT_NAME = APP_NAME.toLowerCase()
-  .replace(/ /g, "-")
-  // eslint-disable-next-line no-useless-escape
-  .replace(/[\[\]]/g, "");
 
 export const SIDE_PANEL_WIDTH = 400;
 export const EXTENSION_Z_INDEX = 2147483600;
 
+export const WEBGATI_AI_ROOT_ID = "webgati-ai-extension-root";
+export const WEBGATI_AI_SHADOW_ROOT_ID = "webgati-ai-extension-shadow-root";
+
 export const STORAGE_FIELD_AI_MODEL_CONFIG = "aiModelConfig";
 export const STORAGE_FIELD_LAST_SELECTED_MODEL_ID = "lastSelectedModelId";
-
-export const CHATBOT_ROOT_ID = `${ELEMENT_NAME}-chatbot-root`;
-export const CHATBOT_SHADOW_ROOT_ID = `${ELEMENT_NAME}-chatbot-shadow-root`;
-
-export const SELECTION_DIALOG_ROOT_ID = `${ELEMENT_NAME}-selection-dialog-root`;
-export const SELECTION_DIALOG_SHADOW_ROOT_ID = `${ELEMENT_NAME}-selection-dialog-shadow-root`;
 
 export const MODEL_PROVIDER_OPENAI = "openai";
 export const MODEL_PROVIDER_ANTHROPIC = "anthropic";
