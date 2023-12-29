@@ -43,6 +43,7 @@ export type ChatMessage = {
 export type AppMessageUrlChange = {
   type: "sw_url-change";
   payload: {
+    tabId: number;
     url: string;
   };
 };

@@ -21,12 +21,15 @@ Webgati AI is a Chrome & MS Edge browser extension for chatting with any webpage
 - Open Source: Community-driven and transparent, allowing for continuous improvement and collective auditing.
 
 ### Roadmap
+
 - Save chat messages to local storage
+- Custom prompts/instructions for each website
 - Index and chat with all pages in a website 
 - Add more model providers including multi-lingual and domain-specific models
 - Web agents for automated tasks
 
 ## Ollama Setup
+
 - Install [Ollama](https://ollama.ai/)
 - Run `OLLAMA_ORIGINS=* OLLAMA_HOST=127.0.0.1:11434 ollama serve`
 
@@ -39,9 +42,12 @@ Webgati AI is a Chrome & MS Edge browser extension for chatting with any webpage
 ## Tech/Frameworks
 
 - Chrome extension - [CRXJS](https://crxjs.dev/vite-plugin/)
-- AI/LLM - [LangChain](https://github.com/langchain-ai/langchainjs)
+- AI/LLM - [LangChain](https://github.com/langchain-ai/langchainjs), [transformers.js](https://huggingface.co/docs/transformers.js/index)
 - UI - [Mantine](https://mantine.dev/)
+
+## Contributing
+This project is open to and encourages contributions to benefit the wider community! Feel free to reach out to get started.
 
 ## Feedback
 
-Please provide feedback by creating an issue or sending an email to contact@webgatiai.com
+Please provide feedback by creating an issue, sending an email to contact@webgatiai.com or contacting [sqzsh269](https://twitter.com/sgzsh269)

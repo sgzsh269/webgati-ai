@@ -308,6 +308,7 @@ export function SidePanel(): JSX.Element {
   }, []);
 
   useSidePanelMessageListener(
+    tabId,
     handleUrlChange,
     handleSelectionPrompt,
     handleImageCapture

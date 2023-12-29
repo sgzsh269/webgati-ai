@@ -272,7 +272,7 @@ async function sendUrlChangeMessage(tabId: number, url: string) {
   try {
     await chrome.runtime.sendMessage<AppMessageUrlChange>({
       type: "sw_url-change",
-      payload: { url },
+      payload: { tabId, url },
     });
   } catch (error: any) {
     // no-op, this is expected when the content script hasn't been injected yet on a fresh page load
