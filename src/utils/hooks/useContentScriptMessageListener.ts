@@ -14,8 +14,9 @@ export function useContentScriptMessageListener(
       sendResponse: (response: any) => void
     ) => {
       switch (message.type) {
-        case "start-page-snip-tool":
+        case "sp_start-page-snip-tool":
           onStartPageSnipTool();
+          sendResponse("OK");
           break;
         case "sp_get-webpage":
           onGetWebpage(message.payload.usageType).then((webpage) => {
@@ -23,6 +24,7 @@ export function useContentScriptMessageListener(
           });
           break;
       }
+      return true;
     };
 
     chrome.runtime.onMessage.addListener(handleMessage);

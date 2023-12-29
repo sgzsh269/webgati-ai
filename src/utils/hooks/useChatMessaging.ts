@@ -60,13 +60,13 @@ export function useChatMessaging(
 
     const handleMessage = (msg: AppMessage) => {
       switch (msg.type) {
-        case "bot-processing":
+        case "sw_bot-processing":
           setIsBotProcessing(true);
           break;
-        case "bot-token-response":
+        case "sw_bot-token-response":
           onMessage(msg.payload, false);
           break;
-        case "bot-done":
+        case "sw_bot-done":
           onMessage({ token: "" }, true);
           setIsBotProcessing(false);
           break;

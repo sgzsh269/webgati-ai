@@ -27,6 +27,7 @@ export type AppContextType = {
   webpageMarkdown: string;
   analyzeWebpage: () => Promise<void>;
   clearChatContext: () => Promise<void>;
+  handleImageCapture: (imageData: string) => void;
 };
 
 export type IndexedData = {
@@ -72,7 +73,7 @@ export type AppMessageUpdateModelId = {
 };
 
 export type AppMessageCaptureVisibleScreen = {
-  type: "cs_capture-visible-screen";
+  type: "any_capture-visible-screen";
 };
 
 export type AppMessageSelectionPrompt = {
@@ -90,7 +91,7 @@ export type AppMessageImageCapture = {
 };
 
 export type AppMessageBotExecute = {
-  type: "bot-execute";
+  type: "sp_bot-execute";
   payload:
     | AppMessagePayloadGeneral
     | AppMessagePayloadWebpageTextQA
@@ -99,11 +100,11 @@ export type AppMessageBotExecute = {
 };
 
 export type AppMessageBotProcessing = {
-  type: "bot-processing";
+  type: "sw_bot-processing";
 };
 
 export type AppMessageBotTokenResponse = {
-  type: "bot-token-response";
+  type: "sw_bot-token-response";
   payload: {
     token: string;
     error?: string;
@@ -111,15 +112,15 @@ export type AppMessageBotTokenResponse = {
 };
 
 export type AppMessageBotDone = {
-  type: "bot-done";
+  type: "sw_bot-done";
 };
 
 export type AppMessageBotStop = {
-  type: "bot-stop";
+  type: "sp_bot-stop";
 };
 
 export type AppMessageBotClearMemory = {
-  type: "bot-clear-memory";
+  type: "sp_bot-clear-memory";
 };
 
 export type AppMessageKeepAlive = {
@@ -135,7 +136,7 @@ export type AppMessageSidePanelInit = {
 };
 
 export type AppMessageStartPageSnipTool = {
-  type: "start-page-snip-tool";
+  type: "sp_start-page-snip-tool";
 };
 
 export type AppMessagePayloadGeneral = {

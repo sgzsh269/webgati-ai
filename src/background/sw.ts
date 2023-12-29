@@ -93,19 +93,9 @@ chrome.runtime.onMessage.addListener(function (
       sendResponse("OK");
       break;
     case "sp_index-webpage":
-      indexWebpage(message)
-        .then(() =>
-          sendResponse({
-            status: "success",
-          })
-        )
-        .catch(() =>
-          sendResponse({
-            status: "error",
-          })
-        );
+      indexWebpage(message).then(() => sendResponse("OK"));
       break;
-    case "cs_capture-visible-screen":
+    case "any_capture-visible-screen":
       chrome.tabs
         .captureVisibleTab({
           format: "png",
@@ -140,13 +130,13 @@ chrome.runtime.onConnect.addListener(function (port) {
 
 async function handlePortMessage(tabState: TabState, message: AppMessage) {
   switch (message.type) {
-    case "bot-execute":
+    case "sp_bot-execute":
       invokeBot(message, tabState);
       break;
-    case "bot-stop":
+    case "sp_bot-stop":
       stopBot(tabState.tabId);
       break;
-    case "bot-clear-memory":
+    case "sp_bot-clear-memory":
       clearBotMemory(tabState);
       break;
     default:
@@ -254,13 +244,13 @@ function stopBot(tabId: number) {
 
 function postBotProcessing(tabState: TabState) {
   tabState.port?.postMessage({
-    type: "bot-processing",
+    type: "sw_bot-processing",
   } as AppMessageBotProcessing);
 }
 
 function postBotTokenResponse(tabState: TabState, token: string) {
   tabState.port?.postMessage({
-    type: "bot-token-response",
+    type: "sw_bot-token-response",
     payload: {
       token,
     },
@@ -269,7 +259,7 @@ function postBotTokenResponse(tabState: TabState, token: string) {
 
 function postBotError(tabState: TabState, error: string) {
   tabState.port?.postMessage({
-    type: "bot-token-response",
+    type: "sw_bot-token-response",
     payload: {
       error,
     },
@@ -278,7 +268,7 @@ function postBotError(tabState: TabState, error: string) {
 
 function postBotDone(tabState: TabState) {
   tabState.port?.postMessage({
-    type: "bot-done",
+    type: "sw_bot-done",
   } as AppMessageBotDone);
 }
 

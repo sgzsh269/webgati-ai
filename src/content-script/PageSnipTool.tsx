@@ -105,7 +105,7 @@ function startClipTool(onImage: (imageData: string) => void) {
       setTimeout(async () => {
         chrome.runtime.sendMessage<AppMessageCaptureVisibleScreen>(
           {
-            type: "cs_capture-visible-screen",
+            type: "any_capture-visible-screen",
           },
           (imageData) => {
             resolve(imageData);

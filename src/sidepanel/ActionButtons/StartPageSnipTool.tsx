@@ -12,7 +12,7 @@ export function StartPageSnipTool(): JSX.Element {
       return;
     }
     chrome.tabs.sendMessage<AppMessageStartPageSnipTool>(tabId, {
-      type: "start-page-snip-tool",
+      type: "sp_start-page-snip-tool",
     });
   };
 

@@ -7,18 +7,26 @@ export function useSidePanelMessageListener(
   onImageCapture: (imageData: string) => void
 ): void {
   useEffect(() => {
-    const listener = (message: AppMessage) => {
+    const listener = (
+      message: AppMessage,
+      sender: chrome.runtime.MessageSender,
+      sendResponse: (response: any) => void
+    ) => {
       switch (message.type) {
         case "sw_url-change":
           onUrlChange();
+          sendResponse("OK");
           break;
         case "cs_selection-prompt":
           onSelectionPrompt(message.payload.prompt);
+          sendResponse("OK");
           break;
         case "cs_image-capture":
           onImageCapture(message.payload.imageData);
+          sendResponse("OK");
           break;
       }
+      return true;
     };
 
     chrome.runtime.onMessage.addListener(listener);
@@ -26,5 +34,5 @@ export function useSidePanelMessageListener(
     return () => {
       chrome.runtime.onMessage.removeListener(listener);
     };
-  }, [onUrlChange]);
+  }, [onUrlChange, onSelectionPrompt, onImageCapture]);
 }

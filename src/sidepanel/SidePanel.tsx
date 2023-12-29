@@ -117,7 +117,7 @@ export function SidePanel(): JSX.Element {
 
       if (queryMode === "webpage-vqa") {
         swPort?.postMessage({
-          type: "bot-execute",
+          type: "sp_bot-execute",
           payload: {
             queryMode,
             prompt,
@@ -126,7 +126,7 @@ export function SidePanel(): JSX.Element {
         } as AppMessageBotExecute);
       } else {
         swPort?.postMessage({
-          type: "bot-execute",
+          type: "sp_bot-execute",
           payload: {
             queryMode,
             prompt,
@@ -165,13 +165,13 @@ export function SidePanel(): JSX.Element {
 
   const handleStopPromptProcessing = () => {
     swPort?.postMessage({
-      type: "bot-stop",
+      type: "sp_bot-stop",
     } as AppMessageBotStop);
   };
 
   const clearChatContext = useCallback(async () => {
     swPort?.postMessage({
-      type: "bot-clear-memory",
+      type: "sp_bot-clear-memory",
     } as AppMessageBotClearMemory);
     setMessages([]);
   }, [swPort]);
@@ -333,6 +333,7 @@ export function SidePanel(): JSX.Element {
         webpageMarkdown,
         analyzeWebpage,
         clearChatContext,
+        handleImageCapture,
       }}
     >
       <Paper
@@ -393,6 +394,11 @@ export function SidePanel(): JSX.Element {
             <Button color="orange" size="xs" onClick={openSettings}>
               Open Settings
             </Button>
+          </Alert>
+        )}
+        {queryMode === "webpage-vqa" && !imageData && (
+          <Alert icon={<IconAlertCircle size={16} />} color="red">
+            Please capture image
           </Alert>
         )}
         <ChatUI

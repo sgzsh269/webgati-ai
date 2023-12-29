@@ -7,4 +7,5 @@ export const AppContext = React.createContext<AppContextType>({
   webpageMarkdown: "",
   analyzeWebpage: async () => {},
   clearChatContext: async () => {},
+  handleImageCapture: async (imageData: string) => imageData,
 });
