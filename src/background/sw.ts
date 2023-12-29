@@ -1,7 +1,3 @@
-import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-import { MemoryVectorStore } from "langchain/vectorstores/memory";
-import { ConversationSummaryBufferMemory } from "langchain/memory";
-
 import {
   InstallType,
   AppMessage,
@@ -22,10 +18,8 @@ import {
 import { SWService } from "./services/sw-service";
 import { AIService } from "./services/ai/ai-service";
 
-const splitter = RecursiveCharacterTextSplitter.fromLanguage("markdown", {
-  chunkSize: 2000,
-  chunkOverlap: 200,
-});
+const swService = new SWService();
+const aiService = new AIService(swService);
 
 /// STORAGE EVENTS
 
@@ -153,15 +147,13 @@ function handlePortDisconnect(tabState: TabState) {
 async function indexWebpage(message: AppMessageIndexWebpage) {
   const pageMarkdown = message.payload.pageMarkdown;
 
-  const webpageDocs = await splitter.createDocuments([pageMarkdown]);
-
   const tabId = message.payload.tabId;
 
   const tabState = swService.swState.tabIdStateMap[tabId] as TabState;
 
-  tabState.vectorStore = await MemoryVectorStore.fromDocuments(
-    webpageDocs,
-    aiService.getEmbeddingModel(tabId)!
+  tabState.vectorStore = await aiService.createAndPopulateVectorStore(
+    tabId,
+    pageMarkdown
   );
 }
 
@@ -206,11 +198,7 @@ async function invokeBot(msg: AppMessageBotExecute, tabState: TabState) {
     }
 
     if (!tabState.botMemory) {
-      tabState.botMemory = new ConversationSummaryBufferMemory({
-        llm: aiService.getCurrentLLM(tabState.tabId, false),
-        maxTokenLimit: 1000,
-        returnMessages: true,
-      });
+      tabState.botMemory = aiService.createMemory(tabState.tabId);
     }
 
     await aiService.execute(
@@ -289,9 +277,6 @@ async function sendUrlChangeMessage(tabId: number, url: string) {
 }
 
 /// INITIALIZATION
-
-const swService = new SWService();
-const aiService = new AIService(swService);
 
 chrome.runtime.onInstalled.addListener(async function (details) {
   if (details.reason === "update") {

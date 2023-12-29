@@ -1,7 +1,6 @@
 import { Document } from "langchain/document";
 import { ConversationSummaryBufferMemory } from "langchain/memory";
 import { VectorStore } from "langchain/vectorstores/base";
-import { MemoryVectorStore } from "langchain/vectorstores/memory";
 import {
   MODEL_PROVIDER_OPENAI,
   MODEL_PROVIDER_ANTHROPIC,
@@ -183,7 +182,7 @@ export type TabState = {
   url: string | null | undefined;
   botAbortController: AbortController | null;
   botMemory: ConversationSummaryBufferMemory | null;
-  vectorStore: MemoryVectorStore | null;
+  vectorStore: VectorStore | null;
   port: chrome.runtime.Port | null;
   model: {
     provider: ModelProvider;

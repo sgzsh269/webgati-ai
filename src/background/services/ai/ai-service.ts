@@ -19,9 +19,17 @@ import { BaseChatModel } from "langchain/chat_models/base";
 import { HuggingFaceTransformersEmbeddings } from "langchain/embeddings/hf_transformers";
 import { ChatOllama } from "langchain/chat_models/ollama";
 import { env } from "@xenova/transformers";
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { Document } from "langchain/document";
+import { MemoryVectorStore } from "langchain/vectorstores/memory";
 
 env.allowLocalModels = false;
 env.backends.onnx.wasm.numThreads = 1;
+
+const splitter = RecursiveCharacterTextSplitter.fromLanguage("markdown", {
+  chunkSize: 2000,
+  chunkOverlap: 200,
+});
 
 const MAX_RETRIES = 3;
 
@@ -132,6 +140,29 @@ export class AIService {
     }
 
     throw new Error("Unsupported model provider: " + modelProvider);
+  }
+
+  async splitText(text: string): Promise<Document[]> {
+    return splitter.createDocuments([text]);
+  }
+
+  async createAndPopulateVectorStore(
+    tabId: number,
+    text: string
+  ): Promise<VectorStore> {
+    const docs = await this.splitText(text);
+    return MemoryVectorStore.fromDocuments(
+      docs,
+      this.getEmbeddingModel(tabId)!
+    );
+  }
+
+  createMemory(tabId: number): ConversationSummaryBufferMemory {
+    return new ConversationSummaryBufferMemory({
+      llm: this.getCurrentLLM(tabId, false),
+      maxTokenLimit: 1000,
+      returnMessages: true,
+    });
   }
 
   async execute(
