@@ -4,7 +4,11 @@ import { SelectionDialog } from "./SelectionDialog";
 import { PageSnipTool } from "./PageSnipTool";
 import { useContentScriptMessageListener } from "../utils/hooks/useContentScriptMessageListener";
 import { generatePageMarkdown } from "../utils/markdown";
-import { AppMessageGetWebpage } from "../utils/types";
+import {
+  AppMessageGetWebpage,
+  AppMessageImageCapture,
+  AppMessageSelectionPrompt,
+} from "../utils/types";
 
 const SELECTION_DEBOUNCE_DELAY_MS = 800;
 
@@ -22,11 +26,22 @@ export function ContentScriptApp(): JSX.Element {
 
   const handleSelectionDialogSubmit = useCallback((prompt: string) => {
     setShowSelectionDialog(false);
+    chrome.runtime.sendMessage<AppMessageSelectionPrompt>({
+      type: "cs_selection-prompt",
+      payload: {
+        prompt,
+      },
+    });
   }, []);
 
   const handlePageSnipToolImage = useCallback((imageData: string) => {
-    console.log("imageData", imageData);
     setShowPageSnipTool(false);
+    chrome.runtime.sendMessage<AppMessageImageCapture>({
+      type: "cs_image-capture",
+      payload: {
+        imageData,
+      },
+    });
   }, []);
 
   const handleStartPageSnipTool = useCallback(() => {

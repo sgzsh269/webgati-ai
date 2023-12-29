@@ -11,7 +11,7 @@ export function StartPageSnipTool(): JSX.Element {
     if (!tabId) {
       return;
     }
-    await chrome.tabs.sendMessage<AppMessageStartPageSnipTool>(tabId, {
+    chrome.tabs.sendMessage<AppMessageStartPageSnipTool>(tabId, {
       type: "start-page-snip-tool",
     });
   };

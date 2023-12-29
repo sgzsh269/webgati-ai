@@ -1,11 +1,23 @@
 import { useEffect } from "react";
 import { AppMessage } from "../types";
 
-export function useSidePanelMessageListener(onUrlChange: () => void): void {
+export function useSidePanelMessageListener(
+  onUrlChange: () => void,
+  onSelectionPrompt: (prompt: string) => void,
+  onImageCapture: (imageData: string) => void
+): void {
   useEffect(() => {
     const listener = (message: AppMessage) => {
-      if (message.type === "url-change") {
-        onUrlChange();
+      switch (message.type) {
+        case "sw_url-change":
+          onUrlChange();
+          break;
+        case "cs_selection-prompt":
+          onSelectionPrompt(message.payload.prompt);
+          break;
+        case "cs_image-capture":
+          onImageCapture(message.payload.imageData);
+          break;
       }
     };
 

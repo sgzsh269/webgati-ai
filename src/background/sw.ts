@@ -106,7 +106,6 @@ chrome.runtime.onMessage.addListener(function (
         );
       break;
     case "cs_capture-visible-screen":
-      console.log("capture-visible-screen");
       chrome.tabs
         .captureVisibleTab({
           format: "png",

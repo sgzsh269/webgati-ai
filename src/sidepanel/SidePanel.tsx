@@ -65,7 +65,23 @@ export function SidePanel(): JSX.Element {
   const manifest = chrome.runtime.getManifest();
   const version = manifest.version;
 
-  const analyzeWebpage = async () => {
+  const handleBotMessagePayload = useCallback(
+    (payload: AppMessageBotTokenResponse["payload"], isDone: boolean) => {
+      if (payload.error) {
+        setError(payload.error);
+      } else {
+        processToken(payload.token, isDone);
+      }
+    },
+    []
+  );
+
+  const { swPort, isBotProcessing } = useChatMessaging(
+    tabId,
+    handleBotMessagePayload
+  );
+
+  const analyzeWebpage = useCallback(async () => {
     const pageMarkdown = await chrome.tabs.sendMessage<AppMessageGetWebpage>(
       tabId!,
       {
@@ -84,36 +100,42 @@ export function SidePanel(): JSX.Element {
         pageMarkdown,
       },
     });
-  };
+  }, [tabId]);
 
-  const processUserPrompt = async (queryMode: QueryMode, prompt: string) => {
-    setMessages((messages) => [...messages, { role: "user", content: prompt }]);
+  const processUserPrompt = useCallback(
+    async (queryMode: QueryMode, prompt: string) => {
+      setMessages((messages) => [
+        ...messages,
+        { role: "user", content: prompt },
+      ]);
 
-    if (queryMode === "webpage-text-qa") {
-      if (!webpageMarkdown) {
-        await analyzeWebpage();
+      if (queryMode === "webpage-text-qa") {
+        if (!webpageMarkdown) {
+          await analyzeWebpage();
+        }
       }
-    }
 
-    if (queryMode === "webpage-vqa") {
-      swPort?.postMessage({
-        type: "bot-execute",
-        payload: {
-          queryMode,
-          prompt,
-          imageData,
-        } as AppMessagePayloadWebpageVQA,
-      } as AppMessageBotExecute);
-    } else {
-      swPort?.postMessage({
-        type: "bot-execute",
-        payload: {
-          queryMode,
-          prompt,
-        } as AppMessagePayloadGeneral | AppMessagePayloadWebpageTextQA,
-      } as AppMessageBotExecute);
-    }
-  };
+      if (queryMode === "webpage-vqa") {
+        swPort?.postMessage({
+          type: "bot-execute",
+          payload: {
+            queryMode,
+            prompt,
+            imageData,
+          } as AppMessagePayloadWebpageVQA,
+        } as AppMessageBotExecute);
+      } else {
+        swPort?.postMessage({
+          type: "bot-execute",
+          payload: {
+            queryMode,
+            prompt,
+          } as AppMessagePayloadGeneral | AppMessagePayloadWebpageTextQA,
+        } as AppMessageBotExecute);
+      }
+    },
+    [analyzeWebpage, imageData, swPort, webpageMarkdown]
+  );
 
   const processToken = (token: string, isDone: boolean) => {
     setMessages((messages) => {
@@ -140,22 +162,6 @@ export function SidePanel(): JSX.Element {
       ];
     });
   };
-
-  const handleBotMessagePayload = useCallback(
-    (payload: AppMessageBotTokenResponse["payload"], isDone: boolean) => {
-      if (payload.error) {
-        setError(payload.error);
-      } else {
-        processToken(payload.token, isDone);
-      }
-    },
-    []
-  );
-
-  const { swPort, isBotProcessing } = useChatMessaging(
-    tabId,
-    handleBotMessagePayload
-  );
 
   const handleStopPromptProcessing = () => {
     swPort?.postMessage({
@@ -290,7 +296,22 @@ export function SidePanel(): JSX.Element {
     init();
   }, [init]);
 
-  useSidePanelMessageListener(handleUrlChange);
+  const handleSelectionPrompt = useCallback(
+    (prompt: string) => {
+      processUserPrompt("general", prompt);
+    },
+    [processUserPrompt]
+  );
+
+  const handleImageCapture = useCallback((imageData: string) => {
+    setImageData(imageData);
+  }, []);
+
+  useSidePanelMessageListener(
+    handleUrlChange,
+    handleSelectionPrompt,
+    handleImageCapture
+  );
 
   useEffect(() => {
     init();
@@ -312,7 +333,6 @@ export function SidePanel(): JSX.Element {
         webpageMarkdown,
         analyzeWebpage,
         clearChatContext,
-        setImageData,
       }}
     >
       <Paper

@@ -27,7 +27,6 @@ export type AppContextType = {
   webpageMarkdown: string;
   analyzeWebpage: () => Promise<void>;
   clearChatContext: () => Promise<void>;
-  setImageData: (imageData: string) => void;
 };
 
 export type IndexedData = {
@@ -74,6 +73,20 @@ export type AppMessageUpdateModelId = {
 
 export type AppMessageCaptureVisibleScreen = {
   type: "cs_capture-visible-screen";
+};
+
+export type AppMessageSelectionPrompt = {
+  type: "cs_selection-prompt";
+  payload: {
+    prompt: string;
+  };
+};
+
+export type AppMessageImageCapture = {
+  type: "cs_image-capture";
+  payload: {
+    imageData: string;
+  };
 };
 
 export type AppMessageBotExecute = {
@@ -160,7 +173,9 @@ export type AppMessage =
   | AppMessageUpdateModelId
   | AppMessageCaptureVisibleScreen
   | AppMessageSidePanelInit
-  | AppMessageStartPageSnipTool;
+  | AppMessageStartPageSnipTool
+  | AppMessageSelectionPrompt
+  | AppMessageImageCapture;
 
 export type TabState = {
   tabId: number;
