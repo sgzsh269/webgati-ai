@@ -21,7 +21,7 @@ Webgati AI is a Chrome & MS Edge browser extension for chatting with any webpage
 - Open Source: Community-driven and transparent, allowing for continuous improvement and collective auditing.
 
 ### Demo
-[![Demo Video](https://img.youtube.com/vi/jtVr1JYI18Q/0.jpg)](https://www.youtube.com/watch?v=jtVr1JYI18Q)
+<a href="https://www.youtube.com/watch?v=jtVr1JYI18Q" target="_blank"><img src="https://img.youtube.com/vi/jtVr1JYI18Q/0.jpg" alt="Demo Video"></a>
 
 
 ### Roadmap
