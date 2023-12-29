@@ -13,7 +13,6 @@ import {
 } from "@mantine/core";
 
 import { ChatUI } from "./ChatUI";
-import { generatePageMarkdown } from "../utils/markdown";
 import { ActionList } from "./ActionList";
 import { AppContext } from "../utils/app-context";
 import {
@@ -27,16 +26,17 @@ import {
   ModelConfig,
   ModelProvider,
   QueryMode,
-  SWMessageBotClearMemory,
-  SWMessageBotExecute,
-  SWMessageBotStop,
-  SWMessageBotTokenResponse,
-  SWMessageSidePanelInit,
-  SWMessageIndexWebpage,
-  SWMessagePayloadGeneral,
-  SWMessagePayloadWebpageTextQA,
-  SWMessagePayloadWebpageVQA,
-  SWMessageUpdateModelId,
+  AppMessageBotClearMemory,
+  AppMessageBotExecute,
+  AppMessageBotStop,
+  AppMessageBotTokenResponse,
+  AppMessageSidePanelInit,
+  AppMessageIndexWebpage,
+  AppMessagePayloadGeneral,
+  AppMessagePayloadWebpageTextQA,
+  AppMessagePayloadWebpageVQA,
+  AppMessageUpdateModelId,
+  AppMessageGetWebpage,
 } from "../utils/types";
 import { IconAlertCircle, IconSettings } from "@tabler/icons-react";
 import { openSettings } from "../utils/ui";
@@ -66,12 +66,21 @@ export function SidePanel(): JSX.Element {
   const version = manifest.version;
 
   const analyzeWebpage = async () => {
-    const pageMarkdown = await generatePageMarkdown("general");
+    const pageMarkdown = await chrome.tabs.sendMessage<AppMessageGetWebpage>(
+      tabId!,
+      {
+        type: "sp_get-webpage",
+        payload: {
+          usageType: "general",
+        },
+      }
+    );
     setWebpageMarkdown(pageMarkdown);
 
-    await chrome.runtime.sendMessage<SWMessageIndexWebpage>({
+    await chrome.runtime.sendMessage<AppMessageIndexWebpage>({
       type: "sp_index-webpage",
       payload: {
+        tabId: tabId!,
         pageMarkdown,
       },
     });
@@ -93,16 +102,16 @@ export function SidePanel(): JSX.Element {
           queryMode,
           prompt,
           imageData,
-        } as SWMessagePayloadWebpageVQA,
-      } as SWMessageBotExecute);
+        } as AppMessagePayloadWebpageVQA,
+      } as AppMessageBotExecute);
     } else {
       swPort?.postMessage({
         type: "bot-execute",
         payload: {
           queryMode,
           prompt,
-        } as SWMessagePayloadGeneral | SWMessagePayloadWebpageTextQA,
-      } as SWMessageBotExecute);
+        } as AppMessagePayloadGeneral | AppMessagePayloadWebpageTextQA,
+      } as AppMessageBotExecute);
     }
   };
 
@@ -133,7 +142,7 @@ export function SidePanel(): JSX.Element {
   };
 
   const handleBotMessagePayload = useCallback(
-    (payload: SWMessageBotTokenResponse["payload"], isDone: boolean) => {
+    (payload: AppMessageBotTokenResponse["payload"], isDone: boolean) => {
       if (payload.error) {
         setError(payload.error);
       } else {
@@ -151,13 +160,13 @@ export function SidePanel(): JSX.Element {
   const handleStopPromptProcessing = () => {
     swPort?.postMessage({
       type: "bot-stop",
-    } as SWMessageBotStop);
+    } as AppMessageBotStop);
   };
 
   const clearChatContext = useCallback(async () => {
     swPort?.postMessage({
       type: "bot-clear-memory",
-    } as SWMessageBotClearMemory);
+    } as AppMessageBotClearMemory);
     setMessages([]);
   }, [swPort]);
 
@@ -187,7 +196,7 @@ export function SidePanel(): JSX.Element {
 
       const aiModelConfig = await readAIModelConfig();
 
-      await chrome.runtime.sendMessage<SWMessageUpdateModelId>({
+      await chrome.runtime.sendMessage<AppMessageUpdateModelId>({
         type: "sp_update-model",
         payload: {
           tabId,
@@ -220,7 +229,7 @@ export function SidePanel(): JSX.Element {
     const tabId = tab!.id!;
     const url = tab!.url!;
 
-    await chrome.runtime.sendMessage<SWMessageSidePanelInit>({
+    await chrome.runtime.sendMessage<AppMessageSidePanelInit>({
       type: "sp_side-panel-init",
       payload: {
         tabId,

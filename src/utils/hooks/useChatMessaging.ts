@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import {
-  SWMessage,
-  SWMessageBotTokenResponse,
-  SWMessageKeepAlive,
+  AppMessage,
+  AppMessageBotTokenResponse,
+  AppMessageKeepAlive,
 } from "../types";
 
 const SW_CONNECTION_INTERVAL = 15 * 1000;
@@ -10,7 +10,7 @@ const SW_CONNECTION_INTERVAL = 15 * 1000;
 export function useChatMessaging(
   tabId: number | null,
   onMessage: (
-    payload: SWMessageBotTokenResponse["payload"],
+    payload: AppMessageBotTokenResponse["payload"],
     isDone: boolean
   ) => void
 ): {
@@ -58,7 +58,7 @@ export function useChatMessaging(
       }
     };
 
-    const handleMessage = (msg: SWMessage) => {
+    const handleMessage = (msg: AppMessage) => {
       switch (msg.type) {
         case "bot-processing":
           setIsBotProcessing(true);
@@ -76,7 +76,7 @@ export function useChatMessaging(
     };
 
     const swKeepAlive = async () => {
-      await chrome.runtime.sendMessage<SWMessageKeepAlive>({
+      await chrome.runtime.sendMessage<AppMessageKeepAlive>({
         type: "sp_keep-alive",
       });
     };

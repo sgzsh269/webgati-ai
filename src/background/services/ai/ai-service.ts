@@ -3,7 +3,7 @@ import { VectorStore } from "langchain/vectorstores/base";
 import {
   AIModelConfig,
   ModelConfig,
-  SWMessageBotExecute,
+  AppMessageBotExecute,
   TabState,
 } from "../../../utils/types";
 import { executeWebpageSummary } from "./webpage-summary";
@@ -137,7 +137,7 @@ export class AIService {
   async execute(
     installType: "development" | "normal",
     tabId: number,
-    msg: SWMessageBotExecute,
+    msg: AppMessageBotExecute,
     vectorStore: VectorStore | null,
     memory: ConversationSummaryBufferMemory,
     abortController: AbortController,

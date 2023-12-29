@@ -1,9 +1,9 @@
 import { useEffect } from "react";
-import { SWMessage } from "../types";
+import { AppMessage } from "../types";
 
 export function useSidePanelMessageListener(onUrlChange: () => void): void {
   useEffect(() => {
-    const listener = (message: SWMessage) => {
+    const listener = (message: AppMessage) => {
       if (message.type === "url-change") {
         onUrlChange();
       }

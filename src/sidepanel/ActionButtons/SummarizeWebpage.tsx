@@ -2,16 +2,23 @@ import React, { useState } from "react";
 import { ActionButton } from "./ActionButton";
 import { useContext } from "react";
 import { AppContext } from "../../utils/app-context";
-import { generatePageMarkdown } from "../../utils/markdown";
-import { SWMessageBotExecute } from "../../utils/types";
+import { AppMessageBotExecute, AppMessageGetWebpage } from "../../utils/types";
 
 export function SummarizeWebPage(): JSX.Element {
-  const { swPort } = useContext(AppContext);
+  const { swPort, tabId } = useContext(AppContext);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleClick = async () => {
     setIsLoading(true);
-    const markdownContent = await generatePageMarkdown("summary");
+    const markdownContent = await chrome.tabs.sendMessage<AppMessageGetWebpage>(
+      tabId!,
+      {
+        type: "sp_get-webpage",
+        payload: {
+          usageType: "summary",
+        },
+      }
+    );
 
     swPort?.postMessage({
       type: "bot-execute",
@@ -19,7 +26,7 @@ export function SummarizeWebPage(): JSX.Element {
         queryMode: "summary",
         markdownContent,
       },
-    } as SWMessageBotExecute);
+    } as AppMessageBotExecute);
     setIsLoading(false);
   };
 

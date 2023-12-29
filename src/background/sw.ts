@@ -4,15 +4,15 @@ import { ConversationSummaryBufferMemory } from "langchain/memory";
 
 import {
   InstallType,
-  SWMessage,
-  SWMessageBotDone,
-  SWMessageBotExecute,
-  SWMessageBotProcessing,
-  SWMessageBotTokenResponse,
-  SWMessageUrlChange,
+  AppMessage,
+  AppMessageBotDone,
+  AppMessageBotExecute,
+  AppMessageBotProcessing,
+  AppMessageBotTokenResponse,
+  AppMessageUrlChange,
   TabState,
-  SWMessageUpdateModelId as SWMessageUpdateModel,
-  SWMessageIndexWebpage,
+  AppMessageUpdateModelId as SWMessageUpdateModel,
+  AppMessageIndexWebpage,
 } from "../utils/types";
 import { readAIModelConfig } from "../utils/storage";
 import {
@@ -75,7 +75,7 @@ chrome.tabs.onRemoved.addListener(function (tabId) {
 /// MESSAGE EVENTS
 
 chrome.runtime.onMessage.addListener(function (
-  message: SWMessage,
+  message: AppMessage,
   sender,
   sendResponse
 ) {
@@ -93,7 +93,7 @@ chrome.runtime.onMessage.addListener(function (
       sendResponse("OK");
       break;
     case "sp_index-webpage":
-      indexWebpage(sender.tab!.id!, message)
+      indexWebpage(message)
         .then(() =>
           sendResponse({
             status: "success",
@@ -130,7 +130,7 @@ chrome.runtime.onConnect.addListener(function (port) {
 
   tabState.port = port;
 
-  port.onMessage.addListener((message: SWMessage) => {
+  port.onMessage.addListener((message: AppMessage) => {
     handlePortMessage(tabState, message);
   });
 
@@ -139,7 +139,7 @@ chrome.runtime.onConnect.addListener(function (port) {
   });
 });
 
-async function handlePortMessage(tabState: TabState, message: SWMessage) {
+async function handlePortMessage(tabState: TabState, message: AppMessage) {
   switch (message.type) {
     case "bot-execute":
       invokeBot(message, tabState);
@@ -161,10 +161,12 @@ function handlePortDisconnect(tabState: TabState) {
   tabState.port = null;
 }
 
-async function indexWebpage(tabId: number, message: SWMessageIndexWebpage) {
+async function indexWebpage(message: AppMessageIndexWebpage) {
   const pageMarkdown = message.payload.pageMarkdown;
 
   const webpageDocs = await splitter.createDocuments([pageMarkdown]);
+
+  const tabId = message.payload.tabId;
 
   const tabState = swService.swState.tabIdStateMap[tabId] as TabState;
 
@@ -206,7 +208,7 @@ function initTabState(tabId: number, url: string | null | undefined): TabState {
   return swService.swState.tabIdStateMap[tabId]!;
 }
 
-async function invokeBot(msg: SWMessageBotExecute, tabState: TabState) {
+async function invokeBot(msg: AppMessageBotExecute, tabState: TabState) {
   try {
     postBotProcessing(tabState);
 
@@ -254,7 +256,7 @@ function stopBot(tabId: number) {
 function postBotProcessing(tabState: TabState) {
   tabState.port?.postMessage({
     type: "bot-processing",
-  } as SWMessageBotProcessing);
+  } as AppMessageBotProcessing);
 }
 
 function postBotTokenResponse(tabState: TabState, token: string) {
@@ -263,7 +265,7 @@ function postBotTokenResponse(tabState: TabState, token: string) {
     payload: {
       token,
     },
-  } as SWMessageBotTokenResponse);
+  } as AppMessageBotTokenResponse);
 }
 
 function postBotError(tabState: TabState, error: string) {
@@ -272,13 +274,13 @@ function postBotError(tabState: TabState, error: string) {
     payload: {
       error,
     },
-  } as SWMessageBotTokenResponse);
+  } as AppMessageBotTokenResponse);
 }
 
 function postBotDone(tabState: TabState) {
   tabState.port?.postMessage({
     type: "bot-done",
-  } as SWMessageBotDone);
+  } as AppMessageBotDone);
 }
 
 function clearBotMemory(tabState: TabState) {
@@ -288,8 +290,8 @@ function clearBotMemory(tabState: TabState) {
 async function sendUrlChangeMessage(tabId: number, url: string) {
   // Mainly to notify content script to take action when the url changes for SPA-based webpage
   try {
-    await chrome.tabs.sendMessage<SWMessageUrlChange>(tabId, {
-      type: "url-change",
+    await chrome.tabs.sendMessage<AppMessageUrlChange>(tabId, {
+      type: "sw_url-change",
       payload: { url },
     });
   } catch (error: any) {

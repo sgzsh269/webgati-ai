@@ -3,6 +3,8 @@ import { useSelectionDialog } from "../utils/hooks";
 import { SelectionDialog } from "./SelectionDialog";
 import { PageSnipTool } from "./PageSnipTool";
 import { useContentScriptMessageListener } from "../utils/hooks/useContentScriptMessageListener";
+import { generatePageMarkdown } from "../utils/markdown";
+import { AppMessageGetWebpage } from "../utils/types";
 
 const SELECTION_DEBOUNCE_DELAY_MS = 800;
 
@@ -31,7 +33,14 @@ export function ContentScriptApp(): JSX.Element {
     setShowPageSnipTool(true);
   }, []);
 
-  useContentScriptMessageListener(handleStartPageSnipTool);
+  const handleGetWebPage = useCallback(
+    async (usageType: AppMessageGetWebpage["payload"]["usageType"]) => {
+      return generatePageMarkdown(usageType);
+    },
+    []
+  );
+
+  useContentScriptMessageListener(handleStartPageSnipTool, handleGetWebPage);
 
   return (
     <>

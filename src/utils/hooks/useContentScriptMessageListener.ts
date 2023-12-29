@@ -1,15 +1,31 @@
 import { useEffect } from "react";
-import { SWMessage } from "../types";
+import { AppMessage, AppMessageGetWebpage } from "../types";
 
 export function useContentScriptMessageListener(
-  onStartPageSnipTool: () => void
+  onStartPageSnipTool: () => void,
+  onGetWebpage: (
+    usageType: AppMessageGetWebpage["payload"]["usageType"]
+  ) => Promise<string>
 ): void {
   useEffect(() => {
-    const handleMessage = (message: SWMessage, sender, sendResponse) => {
-      if (message.type === "start-page-snip-tool") {
-        onStartPageSnipTool();
-        sendResponse("OK");
+    const handleMessage = (
+      message: AppMessage,
+      sender: chrome.runtime.MessageSender,
+      sendResponse: (response: any) => void
+    ) => {
+      switch (message.type) {
+        case "start-page-snip-tool":
+          onStartPageSnipTool();
+          sendResponse("OK");
+          break;
+        case "sp_get-webpage":
+          onGetWebpage(message.payload.usageType).then((webpage) => {
+            sendResponse(webpage);
+          });
+          break;
       }
+
+      return true;
     };
 
     chrome.runtime.onMessage.addListener(handleMessage);
@@ -17,5 +33,5 @@ export function useContentScriptMessageListener(
     return () => {
       chrome.runtime.onMessage.removeListener(handleMessage);
     };
-  }, [onStartPageSnipTool]);
+  }, [onStartPageSnipTool, onGetWebpage]);
 }

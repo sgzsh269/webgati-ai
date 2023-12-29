@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { EXTENSION_Z_INDEX } from "../utils/constants";
-import { SWMessageCaptureVisibleScreen } from "../utils/types";
+import { AppMessageCaptureVisibleScreen } from "../utils/types";
 
 interface PageSnipToolProps {
   show: boolean;
@@ -103,7 +103,7 @@ function startClipTool(onImage: (imageData: string) => void) {
 
     const imageData = await new Promise<string>((resolve) => {
       setTimeout(async () => {
-        chrome.runtime.sendMessage<SWMessageCaptureVisibleScreen>(
+        chrome.runtime.sendMessage<AppMessageCaptureVisibleScreen>(
           {
             type: "capture-visible-screen",
           },

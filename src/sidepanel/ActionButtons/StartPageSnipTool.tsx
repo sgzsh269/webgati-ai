@@ -2,7 +2,7 @@ import React from "react";
 import { ActionButton } from "./ActionButton";
 import { useContext } from "react";
 import { AppContext } from "../../utils/app-context";
-import { SWMessageStartPageSnipTool } from "../../utils/types";
+import { AppMessageStartPageSnipTool } from "../../utils/types";
 
 export function StartPageSnipTool(): JSX.Element {
   const { tabId } = useContext(AppContext);
@@ -11,7 +11,7 @@ export function StartPageSnipTool(): JSX.Element {
     if (!tabId) {
       return;
     }
-    await chrome.tabs.sendMessage<SWMessageStartPageSnipTool>(tabId, {
+    await chrome.tabs.sendMessage<AppMessageStartPageSnipTool>(tabId, {
       type: "start-page-snip-tool",
     });
   };

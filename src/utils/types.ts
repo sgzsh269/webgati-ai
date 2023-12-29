@@ -10,10 +10,10 @@ import {
 
 export type InstallType = "development" | "normal";
 export type QueryMode =
-  | SWMessagePayloadGeneral["queryMode"]
-  | SWMessagePayloadWebpageTextQA["queryMode"]
-  | SWMessagePayloadWebpageVQA["queryMode"]
-  | SWMessagePayloadSummary["queryMode"];
+  | AppMessagePayloadGeneral["queryMode"]
+  | AppMessagePayloadWebpageTextQA["queryMode"]
+  | AppMessagePayloadWebpageVQA["queryMode"]
+  | AppMessagePayloadSummary["queryMode"];
 
 export type BotMessageType =
   | "agent"
@@ -41,29 +41,29 @@ export type ChatMessage = {
   isComplete?: boolean;
 };
 
-export type SWMessageToggleSidePanel = {
-  type: "toggle-side-panel";
-};
-
-export type SWMessageUrlChange = {
-  type: "url-change";
+export type AppMessageUrlChange = {
+  type: "sw_url-change";
   payload: {
     url: string;
   };
 };
 
-export type SWMessageGetTabId = {
-  type: "get-tab-id";
-};
-
-export type SWMessageIndexWebpage = {
+export type AppMessageIndexWebpage = {
   type: "sp_index-webpage";
   payload: {
+    tabId: number;
     pageMarkdown: string;
   };
 };
 
-export type SWMessageUpdateModelId = {
+export type AppMessageGetWebpage = {
+  type: "sp_get-webpage";
+  payload: {
+    usageType: "general" | "summary";
+  };
+};
+
+export type AppMessageUpdateModelId = {
   type: "sp_update-model";
   payload: {
     tabId: number;
@@ -72,24 +72,24 @@ export type SWMessageUpdateModelId = {
   };
 };
 
-export type SWMessageCaptureVisibleScreen = {
+export type AppMessageCaptureVisibleScreen = {
   type: "cs_capture-visible-screen";
 };
 
-export type SWMessageBotExecute = {
+export type AppMessageBotExecute = {
   type: "bot-execute";
   payload:
-    | SWMessagePayloadGeneral
-    | SWMessagePayloadWebpageTextQA
-    | SWMessagePayloadWebpageVQA
-    | SWMessagePayloadSummary;
+    | AppMessagePayloadGeneral
+    | AppMessagePayloadWebpageTextQA
+    | AppMessagePayloadWebpageVQA
+    | AppMessagePayloadSummary;
 };
 
-export type SWMessageBotProcessing = {
+export type AppMessageBotProcessing = {
   type: "bot-processing";
 };
 
-export type SWMessageBotTokenResponse = {
+export type AppMessageBotTokenResponse = {
   type: "bot-token-response";
   payload: {
     token: string;
@@ -97,23 +97,23 @@ export type SWMessageBotTokenResponse = {
   };
 };
 
-export type SWMessageBotDone = {
+export type AppMessageBotDone = {
   type: "bot-done";
 };
 
-export type SWMessageBotStop = {
+export type AppMessageBotStop = {
   type: "bot-stop";
 };
 
-export type SWMessageBotClearMemory = {
+export type AppMessageBotClearMemory = {
   type: "bot-clear-memory";
 };
 
-export type SWMessageKeepAlive = {
+export type AppMessageKeepAlive = {
   type: "sp_keep-alive";
 };
 
-export type SWMessageSidePanelInit = {
+export type AppMessageSidePanelInit = {
   type: "sp_side-panel-init";
   payload: {
     tabId: number;
@@ -121,47 +121,46 @@ export type SWMessageSidePanelInit = {
   };
 };
 
-export type SWMessageStartPageSnipTool = {
+export type AppMessageStartPageSnipTool = {
   type: "start-page-snip-tool";
 };
 
-export type SWMessagePayloadGeneral = {
+export type AppMessagePayloadGeneral = {
   queryMode: "general";
   prompt: string;
 };
 
-export type SWMessagePayloadWebpageTextQA = {
+export type AppMessagePayloadWebpageTextQA = {
   queryMode: "webpage-text-qa";
   prompt: string;
 };
 
-export type SWMessagePayloadWebpageVQA = {
+export type AppMessagePayloadWebpageVQA = {
   queryMode: "webpage-vqa";
   prompt: string;
   imageData: string;
 };
 
-export type SWMessagePayloadSummary = {
+export type AppMessagePayloadSummary = {
   queryMode: "summary";
   markdownContent: string;
 };
 
-export type SWMessage =
-  | SWMessageToggleSidePanel
-  | SWMessageUrlChange
-  | SWMessageGetTabId
-  | SWMessageIndexWebpage
-  | SWMessageBotExecute
-  | SWMessageBotProcessing
-  | SWMessageBotTokenResponse
-  | SWMessageBotDone
-  | SWMessageBotStop
-  | SWMessageBotClearMemory
-  | SWMessageKeepAlive
-  | SWMessageUpdateModelId
-  | SWMessageCaptureVisibleScreen
-  | SWMessageSidePanelInit
-  | SWMessageStartPageSnipTool;
+export type AppMessage =
+  | AppMessageUrlChange
+  | AppMessageGetWebpage
+  | AppMessageIndexWebpage
+  | AppMessageBotExecute
+  | AppMessageBotProcessing
+  | AppMessageBotTokenResponse
+  | AppMessageBotDone
+  | AppMessageBotStop
+  | AppMessageBotClearMemory
+  | AppMessageKeepAlive
+  | AppMessageUpdateModelId
+  | AppMessageCaptureVisibleScreen
+  | AppMessageSidePanelInit
+  | AppMessageStartPageSnipTool;
 
 export type TabState = {
   tabId: number;
