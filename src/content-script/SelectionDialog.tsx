@@ -1,3 +1,4 @@
+import React, { useCallback, useEffect, useRef } from "react";
 import {
   Accordion,
   ActionIcon,
@@ -8,13 +9,11 @@ import {
   Stack,
   Text,
 } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
+import { useDisclosure, useClickOutside } from "@mantine/hooks";
 import { useForm } from "@mantine/form";
-import React, { useEffect, useRef } from "react";
 import { IconAsterisk, IconX } from "@tabler/icons-react";
 import { EXTENSION_Z_INDEX } from "../utils/constants";
 import { QuestionTextArea } from "../common/QuestionTextArea";
-import { useClickOutside } from "@mantine/hooks";
 import { getSelectedTextPosition } from "../utils/ui";
 
 interface SelectionDialogProps {
@@ -45,22 +44,20 @@ export function SelectionDialog({
   });
 
   useEffect(() => {
-    window.addEventListener("keydown", closeOnEscapePress);
-    return () => window.removeEventListener("keydown", closeOnEscapePress);
-  }, []);
-
-  useEffect(() => {
-    if (!show) {
+    if (opened && !show) {
       handlers.close();
       form.reset();
     }
-  }, [show, handlers, form]);
+  }, [show, handlers, form, opened]);
 
-  const closeOnEscapePress = (event: KeyboardEvent) => {
-    if (event.key === "Escape") {
-      onClose();
-    }
-  };
+  const closeOnEscapePress = useCallback(
+    (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    },
+    [onClose]
+  );
 
   const handleSubmit = (values: any) => {
     const prompt = generateSelectionDialogPrompt(
@@ -79,6 +76,11 @@ export function SelectionDialog({
     form.validate();
     formRef.current?.requestSubmit();
   };
+
+  useEffect(() => {
+    window.addEventListener("keydown", closeOnEscapePress);
+    return () => window.removeEventListener("keydown", closeOnEscapePress);
+  }, [closeOnEscapePress]);
 
   if (!show || !selection) {
     return null;

@@ -29,12 +29,12 @@ export default defineManifest(async (env) => ({
     default_title: APP_NAME,
   },
   options_page: "settings.html",
-  // content_scripts: [
-  //   {
-  //     js: ["src/content-script/index.tsx"],
-  //     matches: ["http://*/*", "https://*/*"],
-  //   },
-  // ],
+  content_scripts: [
+    {
+      js: ["src/content-script/index.tsx"],
+      matches: ["http://*/*", "https://*/*"],
+    },
+  ],
   background: {
     service_worker: "src/background/sw.ts",
     type: "module",

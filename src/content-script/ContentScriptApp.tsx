@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 import { useSelectionDialog } from "../utils/hooks";
 import { SelectionDialog } from "./SelectionDialog";
 import { PageSnipTool } from "./PageSnipTool";
@@ -18,18 +18,18 @@ export function ContentScriptApp(): JSX.Element {
     }
   }, [selection]);
 
-  const handleSelectionDialogSubmit = (prompt: string) => {
+  const handleSelectionDialogSubmit = useCallback((prompt: string) => {
     setShowSelectionDialog(false);
-  };
+  }, []);
 
-  const handlePageSnipToolImage = (imageData: string) => {
+  const handlePageSnipToolImage = useCallback((imageData: string) => {
     console.log("imageData", imageData);
     setShowPageSnipTool(false);
-  };
+  }, []);
 
-  const handleStartPageSnipTool = () => {
+  const handleStartPageSnipTool = useCallback(() => {
     setShowPageSnipTool(true);
-  };
+  }, []);
 
   useContentScriptMessageListener(handleStartPageSnipTool);
 
