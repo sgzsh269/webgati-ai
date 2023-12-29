@@ -65,6 +65,32 @@ export function SidePanel(): JSX.Element {
   const manifest = chrome.runtime.getManifest();
   const version = manifest.version;
 
+  const processToken = useCallback((token: string, isDone: boolean) => {
+    setMessages((messages) => {
+      const lastMessage = messages[messages.length - 1];
+      const prevMessages = messages.slice(0, messages.length - 1);
+
+      if (!lastMessage || lastMessage.isComplete || lastMessage.role !== "ai") {
+        return [
+          ...messages,
+          {
+            role: "ai",
+            content: token,
+            isComplete: isDone,
+          },
+        ];
+      }
+      return [
+        ...prevMessages,
+        {
+          role: "ai",
+          content: lastMessage.content + token,
+          isComplete: isDone,
+        },
+      ];
+    });
+  }, []);
+
   const handleBotMessagePayload = useCallback(
     (payload: AppMessageBotTokenResponse["payload"], isDone: boolean) => {
       if (payload.error) {
@@ -73,7 +99,7 @@ export function SidePanel(): JSX.Element {
         processToken(payload.token, isDone);
       }
     },
-    []
+    [processToken]
   );
 
   const { swPort, isBotProcessing } = useChatMessaging(
@@ -137,37 +163,11 @@ export function SidePanel(): JSX.Element {
     [analyzeWebpage, imageData, swPort, webpageMarkdown]
   );
 
-  const processToken = (token: string, isDone: boolean) => {
-    setMessages((messages) => {
-      const lastMessage = messages[messages.length - 1];
-      const prevMessages = messages.slice(0, messages.length - 1);
-
-      if (!lastMessage || lastMessage.isComplete || lastMessage.role !== "ai") {
-        return [
-          ...messages,
-          {
-            role: "ai",
-            content: token,
-            isComplete: isDone,
-          },
-        ];
-      }
-      return [
-        ...prevMessages,
-        {
-          role: "ai",
-          content: lastMessage.content + token,
-          isComplete: isDone,
-        },
-      ];
-    });
-  };
-
-  const handleStopPromptProcessing = () => {
+  const handleStopPromptProcessing = useCallback(() => {
     swPort?.postMessage({
       type: "sp_bot-stop",
     } as AppMessageBotStop);
-  };
+  }, [swPort]);
 
   const clearChatContext = useCallback(async () => {
     swPort?.postMessage({
@@ -293,8 +293,8 @@ export function SidePanel(): JSX.Element {
   useStorageOnChanged(handleStorageChange);
 
   const handleUrlChange = useCallback(() => {
-    init();
-  }, [init]);
+    clearSessionState();
+  }, [clearSessionState]);
 
   const handleSelectionPrompt = useCallback(
     (prompt: string) => {

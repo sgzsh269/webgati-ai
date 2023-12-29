@@ -21,7 +21,7 @@ export function SummarizeWebPage(): JSX.Element {
     );
 
     swPort?.postMessage({
-      type: "bot-execute",
+      type: "sp_bot-execute",
       payload: {
         queryMode: "summary",
         markdownContent,

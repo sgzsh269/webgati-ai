@@ -47,15 +47,18 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
   // Re-init tab state when url changes or page is refreshed
   // When page is refreshed, only 'favIconUrl' field gets updated
   if (changeInfo.url || changeInfo.favIconUrl) {
-    const oldTabState = swService.swState.tabIdStateMap[tabId];
+    const tabState = swService.swState.tabIdStateMap[tabId];
 
-    let oldUrl = "";
-    if (oldTabState) {
-      oldUrl = oldTabState.url!;
-      oldTabState.port?.disconnect();
+    if (!tabState) {
+      // tabState may not have been initialized yet when a new tab is opened
+      return;
     }
 
-    const newUrl = changeInfo.url || oldUrl;
+    const newUrl = changeInfo.url || tabState.url!;
+    tabState.url = newUrl;
+
+    tabState.botMemory = null;
+    tabState.vectorStore = null;
 
     sendUrlChangeMessage(tabId, newUrl);
   }
@@ -267,7 +270,7 @@ function clearBotMemory(tabState: TabState) {
 async function sendUrlChangeMessage(tabId: number, url: string) {
   // Mainly to notify content script to take action when the url changes for SPA-based webpage
   try {
-    await chrome.tabs.sendMessage<AppMessageUrlChange>(tabId, {
+    await chrome.runtime.sendMessage<AppMessageUrlChange>({
       type: "sw_url-change",
       payload: { url },
     });
