@@ -98,15 +98,16 @@ chrome.runtime.onMessage.addListener(function (
   return true;
 });
 
-chrome.runtime.onConnect.addListener(function (port) {
+chrome.runtime.onConnect.addListener(async function (port) {
   if (!port.name.includes("tab")) {
     return;
   }
   const tabId = parseInt(port.name.split("-")[1]);
 
-  const tabState = swService.swState.tabIdStateMap[tabId] as TabState;
+  let tabState = swService.swState.tabIdStateMap[tabId] as TabState;
   if (!tabState) {
-    throw new Error("No tab state found for tab id: " + tabId);
+    const tab = await chrome.tabs.get(tabId);
+    tabState = initTabState(tabId, tab.url);
   }
 
   tabState.port = port;

@@ -35,7 +35,7 @@ export async function readLastSelectedModelId(): Promise<string | null> {
   return result[STORAGE_FIELD_LAST_SELECTED_MODEL_ID] || null;
 }
 
-export async function saveLastSelectedModelId(
+export async function saveSelectedModelId(
   selectedModelId: string
 ): Promise<void> {
   await chrome.storage.local.set({

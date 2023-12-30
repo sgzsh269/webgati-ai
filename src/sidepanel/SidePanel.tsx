@@ -29,7 +29,6 @@ import {
   AppMessageBotExecute,
   AppMessageBotStop,
   AppMessageBotTokenResponse,
-  AppMessageSidePanelInit,
   AppMessageIndexWebpage,
   AppMessagePayloadGeneral,
   AppMessagePayloadWebpageTextQA,
@@ -43,7 +42,7 @@ import { STORAGE_FIELD_AI_MODEL_CONFIG } from "../utils/constants";
 import {
   readAIModelConfig,
   readLastSelectedModelId,
-  saveLastSelectedModelId,
+  saveSelectedModelId,
 } from "../utils/storage";
 
 export function SidePanel(): JSX.Element {
@@ -180,26 +179,15 @@ export function SidePanel(): JSX.Element {
     setMessages([]);
   }, []);
 
-  const handleSelectedModelChange = useCallback(
-    async (tabId: number, selectedModelId: string | null) => {
-      setSelectedModelId(selectedModelId);
-
-      if (!selectedModelId) {
+  const sendUpdateModelMessage = useCallback(
+    async (tabId: number | null, currSelectedModelId: string | null) => {
+      if (!tabId || !currSelectedModelId) {
         return;
       }
-
-      await saveLastSelectedModelId(selectedModelId);
-
-      const [modelProvider, modelName] = selectedModelId.split("_") as [
+      const [modelProvider, modelName] = currSelectedModelId.split("_") as [
         ModelProvider,
         string
       ];
-
-      if (modelProvider !== selectedModel?.modelProvider) {
-        clearSessionState();
-      }
-
-      const aiModelConfig = await readAIModelConfig();
 
       await chrome.runtime.sendMessage<AppMessageUpdateModelId>({
         type: "sp_update-model",
@@ -209,6 +197,21 @@ export function SidePanel(): JSX.Element {
           modelName,
         },
       });
+    },
+    []
+  );
+
+  const updateModelConfig = useCallback(
+    async (currSelectedModelId: string | null) => {
+      if (!currSelectedModelId) {
+        return;
+      }
+
+      const [modelProvider, modelName] = currSelectedModelId.split("_") as [
+        ModelProvider,
+        string
+      ];
+      const aiModelConfig = await readAIModelConfig();
 
       if (aiModelConfig) {
         const modelConfig = aiModelConfig[modelProvider].chatModels.find(
@@ -222,6 +225,29 @@ export function SidePanel(): JSX.Element {
         });
       }
     },
+    []
+  );
+
+  const handleSelectedModelChange = useCallback(
+    async (currSelectedModelId: string | null) => {
+      if (!currSelectedModelId) {
+        return;
+      }
+
+      setSelectedModelId(currSelectedModelId);
+
+      const [modelProvider] = currSelectedModelId.split("_") as [
+        ModelProvider,
+        string
+      ];
+
+      if (modelProvider !== selectedModel?.modelProvider) {
+        clearSessionState();
+      }
+
+      await saveSelectedModelId(currSelectedModelId);
+    },
+
     [selectedModel, clearSessionState]
   );
 
@@ -232,15 +258,6 @@ export function SidePanel(): JSX.Element {
       await chrome.tabs.query({ active: true, currentWindow: true })
     ).at(0);
     const tabId = tab!.id!;
-    const url = tab!.url!;
-
-    await chrome.runtime.sendMessage<AppMessageSidePanelInit>({
-      type: "sp_side-panel-init",
-      payload: {
-        tabId,
-        url,
-      },
-    });
 
     setTabId(tabId);
 
@@ -248,8 +265,10 @@ export function SidePanel(): JSX.Element {
     populateModelSelect(aiModelConfig);
 
     const lastSelectedModelId = await readLastSelectedModelId();
-    handleSelectedModelChange(tabId, lastSelectedModelId);
-  }, [clearSessionState, handleSelectedModelChange]);
+    if (lastSelectedModelId) {
+      setSelectedModelId(lastSelectedModelId);
+    }
+  }, [clearSessionState]);
 
   const populateModelSelect = (aiModelConfig: AIModelConfig | null) => {
     const modelOptions = [];
@@ -281,12 +300,10 @@ export function SidePanel(): JSX.Element {
       if (aiModelConfigChanges) {
         populateModelSelect(aiModelConfigChanges.newValue);
 
-        if (tabId) {
-          handleSelectedModelChange(tabId, selectedModelId);
-        }
+        updateModelConfig(selectedModelId);
       }
     },
-    [tabId, selectedModelId, handleSelectedModelChange]
+    [selectedModelId, updateModelConfig]
   );
 
   useStorageOnChanged(handleStorageChange);
@@ -314,8 +331,19 @@ export function SidePanel(): JSX.Element {
   );
 
   useEffect(() => {
+    if (!swPort) {
+      return;
+    }
+    sendUpdateModelMessage(tabId, selectedModelId);
+  }, [swPort, tabId, selectedModelId, sendUpdateModelMessage]);
+
+  useEffect(() => {
+    updateModelConfig(selectedModelId);
+  }, [selectedModelId, updateModelConfig]);
+
+  useEffect(() => {
     init();
-  }, []);
+  }, [init]);
 
   const requiresApiKey =
     selectedModel?.modelProvider !== "ollama" && !selectedModel?.apiKey;
@@ -373,7 +401,7 @@ export function SidePanel(): JSX.Element {
             marginTop: "8px",
           }}
           value={selectedModelId}
-          onChange={(value) => handleSelectedModelChange(tabId!, value)}
+          onChange={(value) => handleSelectedModelChange(value)}
           searchable
         />
         <ActionList
