@@ -16,11 +16,11 @@ import { useEffect, useRef } from "react";
 import { useForm } from "@mantine/form";
 import { Message } from "./Message";
 import { useScrollIntoView } from "@mantine/hooks";
-import { QueryMode, ModelConfig } from "../utils/types";
+import { QueryMode, ModelConfig, ChatMessage } from "../utils/types";
 import { IconX } from "@tabler/icons-react";
 
 interface ChatUIProps {
-  messages: { role: "user" | "ai"; content: string }[];
+  messages: ChatMessage[];
   isLoading: boolean;
   disableInput: boolean;
   error: string;

@@ -1,4 +1,3 @@
-import { ConversationSummaryBufferMemory } from "langchain/memory";
 import { LLMChain } from "langchain/chains";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { BaseLanguageModel } from "langchain/dist/base_language";
@@ -31,7 +30,6 @@ const summaryPromptTemplate = new PromptTemplate({
 
 export async function executeWebpageSummary(
   markdownContent: string,
-  memory: ConversationSummaryBufferMemory,
   model: BaseLanguageModel,
   abortController: AbortController,
   onNewToken: (token: string) => void
@@ -44,7 +42,7 @@ export async function executeWebpageSummary(
       prompt: summaryPromptTemplate,
     });
 
-    const result = await chain.call(
+    await chain.call(
       {
         content: doc.pageContent,
         signal: abortController.signal,
@@ -59,6 +57,5 @@ export async function executeWebpageSummary(
         ],
       }
     );
-    memory.chatHistory.addAIChatMessage(result.text);
   }
 }

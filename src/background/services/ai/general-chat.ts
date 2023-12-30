@@ -1,7 +1,8 @@
 import { BaseLanguageModel } from "langchain/base_language";
 import { ConversationChain } from "langchain/chains";
-import { ConversationSummaryBufferMemory } from "langchain/memory";
+import { BufferMemory, ChatMessageHistory } from "langchain/memory";
 import { ChatPromptTemplate, MessagesPlaceholder } from "langchain/prompts";
+import { BaseMessage } from "langchain/schema";
 
 const SYSTEM_PROMPT =
   "The following is a friendly conversation between a human and an AI. The AI is talkative and provides lots of specific details from its context. If the AI does not know the answer to a question, it truthfully says it does not know.";
@@ -14,15 +15,18 @@ const chatPromptTemplate = ChatPromptTemplate.fromMessages([
 
 export async function executeGeneralChat(
   model: BaseLanguageModel,
-  memory: ConversationSummaryBufferMemory,
   prompt: string,
+  chatHistory: BaseMessage[],
   abortController: AbortController,
   onNewToken: (token: string) => void
 ): Promise<void> {
   const chain = new ConversationChain({
     llm: model,
     prompt: chatPromptTemplate,
-    memory,
+    memory: new BufferMemory({
+      chatHistory: new ChatMessageHistory(chatHistory),
+      returnMessages: true,
+    }),
   });
 
   await chain.call(

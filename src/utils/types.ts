@@ -35,7 +35,7 @@ export type IndexedData = {
 };
 
 export type ChatMessage = {
-  role: "user" | "ai";
+  role: "human" | "ai";
   content: string;
   isComplete?: boolean;
 };
@@ -142,17 +142,20 @@ export type AppMessageStartPageSnipTool = {
 export type AppMessagePayloadGeneral = {
   queryMode: "general";
   prompt: string;
+  prevMessages: ChatMessage[];
 };
 
 export type AppMessagePayloadWebpageTextQA = {
   queryMode: "webpage-text-qa";
   prompt: string;
+  prevMessages: ChatMessage[];
 };
 
 export type AppMessagePayloadWebpageVQA = {
   queryMode: "webpage-vqa";
   prompt: string;
   imageData: string;
+  prevMessages: ChatMessage[];
 };
 
 export type AppMessagePayloadSummary = {
@@ -182,7 +185,6 @@ export type TabState = {
   tabId: number;
   url: string | null | undefined;
   botAbortController: AbortController | null;
-  botMemory: ConversationSummaryBufferMemory | null;
   vectorStore: VectorStore | null;
   port: chrome.runtime.Port | null;
   model: {

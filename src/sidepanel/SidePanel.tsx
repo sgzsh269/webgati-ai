@@ -26,7 +26,6 @@ import {
   ModelConfig,
   ModelProvider,
   QueryMode,
-  AppMessageBotClearMemory,
   AppMessageBotExecute,
   AppMessageBotStop,
   AppMessageBotTokenResponse,
@@ -130,10 +129,11 @@ export function SidePanel(): JSX.Element {
 
   const processUserPrompt = useCallback(
     async (queryMode: QueryMode, prompt: string) => {
-      setMessages((messages) => [
-        ...messages,
-        { role: "user", content: prompt },
-      ]);
+      const prevMessages: ChatMessage[] = [];
+      setMessages((messages) => {
+        prevMessages.push(...messages);
+        return [...messages, { role: "human", content: prompt }];
+      });
 
       if (queryMode === "webpage-text-qa") {
         if (!webpageMarkdown) {
@@ -147,6 +147,7 @@ export function SidePanel(): JSX.Element {
           payload: {
             queryMode,
             prompt,
+            prevMessages,
             imageData,
           } as AppMessagePayloadWebpageVQA,
         } as AppMessageBotExecute);
@@ -156,6 +157,7 @@ export function SidePanel(): JSX.Element {
           payload: {
             queryMode,
             prompt,
+            prevMessages,
           } as AppMessagePayloadGeneral | AppMessagePayloadWebpageTextQA,
         } as AppMessageBotExecute);
       }
@@ -170,11 +172,8 @@ export function SidePanel(): JSX.Element {
   }, [swPort]);
 
   const clearChatContext = useCallback(async () => {
-    swPort?.postMessage({
-      type: "sp_bot-clear-memory",
-    } as AppMessageBotClearMemory);
     setMessages([]);
-  }, [swPort]);
+  }, []);
 
   const clearSessionState = useCallback(() => {
     setWebpageMarkdown("");

@@ -1,15 +1,15 @@
 import { BaseLanguageModel } from "langchain/base_language";
-import { ConversationSummaryBufferMemory } from "langchain/memory";
-import { HumanMessage } from "langchain/schema";
+import { BaseMessage, HumanMessage } from "langchain/schema";
 import { ModelProvider } from "../../../utils/types";
 
 export async function executeWebpageVisionChat(
   modelProvider: ModelProvider,
   prompt: string,
   imageData: string,
+  chatHistory: BaseMessage[],
   model: BaseLanguageModel,
   abortController: AbortController,
-  memory: ConversationSummaryBufferMemory,
+
   handleNewTokenCallback: (token: string) => void
 ): Promise<void> {
   let imageUrl: any;
@@ -35,7 +35,7 @@ export async function executeWebpageVisionChat(
     ],
   });
 
-  const result = await model.invoke([message], {
+  await model.invoke([...chatHistory, message], {
     callbacks: [
       {
         handleLLMNewToken(token: string) {
@@ -45,6 +45,4 @@ export async function executeWebpageVisionChat(
     ],
     signal: abortController.signal,
   });
-
-  memory.chatHistory.addAIChatMessage(result.text);
 }

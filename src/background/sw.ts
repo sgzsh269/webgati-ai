@@ -57,7 +57,6 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
     const newUrl = changeInfo.url || tabState.url!;
     tabState.url = newUrl;
 
-    tabState.botMemory = null;
     tabState.vectorStore = null;
 
     sendUrlChangeMessage(tabId, newUrl);
@@ -77,10 +76,6 @@ chrome.runtime.onMessage.addListener(function (
   sendResponse
 ) {
   switch (message.type) {
-    case "sp_side-panel-init":
-      initTabState(message.payload.tabId, message.payload.url);
-      sendResponse("OK");
-      break;
     case "sp_update-model":
       handleModelUpdate(message);
       sendResponse("OK");
@@ -133,9 +128,6 @@ async function handlePortMessage(tabState: TabState, message: AppMessage) {
     case "sp_bot-stop":
       stopBot(tabState.tabId);
       break;
-    case "sp_bot-clear-memory":
-      clearBotMemory(tabState);
-      break;
     default:
       throw new Error(
         `Message type not implemented for port listener: ${message.type}`
@@ -173,7 +165,6 @@ function handleModelUpdate(message: SWMessageUpdateModel) {
   };
 
   if (oldModelProvider !== message.payload.modelProvider) {
-    tabState.botMemory = null;
     tabState.vectorStore = null;
   }
 }
@@ -184,7 +175,6 @@ function initTabState(tabId: number, url: string | null | undefined): TabState {
     url,
     model: null,
     botAbortController: null,
-    botMemory: null,
     vectorStore: null,
     port: null,
   };
@@ -200,16 +190,11 @@ async function invokeBot(msg: AppMessageBotExecute, tabState: TabState) {
       tabState.botAbortController = new AbortController();
     }
 
-    if (!tabState.botMemory) {
-      tabState.botMemory = aiService.createMemory(tabState.tabId);
-    }
-
     await aiService.execute(
       swService.swState.installType as "development" | "normal",
       tabState.tabId,
       msg,
       tabState.vectorStore,
-      tabState.botMemory!,
       tabState.botAbortController,
       (token) => postBotTokenResponse(tabState, token)
     );
@@ -261,10 +246,6 @@ function postBotDone(tabState: TabState) {
   tabState.port?.postMessage({
     type: "sw_bot-done",
   } as AppMessageBotDone);
-}
-
-function clearBotMemory(tabState: TabState) {
-  tabState.botMemory?.clear();
 }
 
 async function sendUrlChangeMessage(tabId: number, url: string) {

@@ -22,6 +22,7 @@ import { env } from "@xenova/transformers";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { Document } from "langchain/document";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
+import { AIMessage, BaseMessage, HumanMessage } from "langchain/schema";
 
 env.allowLocalModels = false;
 env.backends.onnx.wasm.numThreads = 1;
@@ -170,7 +171,6 @@ export class AIService {
     tabId: number,
     msg: AppMessageBotExecute,
     vectorStore: VectorStore | null,
-    memory: ConversationSummaryBufferMemory,
     abortController: AbortController,
     handleNewTokenCallback: (token: string) => void
   ): Promise<void> {
@@ -179,11 +179,23 @@ export class AIService {
     const streamingModel = this.getCurrentLLM(tabId, true);
     const modelProvider = this.getModel(tabId).provider;
 
+    const chatHistory: BaseMessage[] = [];
+    if (queryMode !== "summary") {
+      const messages = msg.payload.prevMessages.map((m) => {
+        if (m.role === "human") {
+          return new HumanMessage(m.content);
+        } else {
+          return new AIMessage(m.content);
+        }
+      });
+      chatHistory.push(...messages);
+    }
+
     if (queryMode === "general") {
       await executeGeneralChat(
         streamingModel,
-        memory,
         msg.payload.prompt,
+        chatHistory,
         abortController,
         handleNewTokenCallback
       );
@@ -197,9 +209,9 @@ export class AIService {
       await executeWebpageRAG(
         streamingModel,
         nonStreamingModel,
-        memory,
         vectorStore,
         msg.payload.prompt,
+        chatHistory,
         abortController,
         handleNewTokenCallback
       );
@@ -208,15 +220,14 @@ export class AIService {
         modelProvider,
         msg.payload.prompt,
         msg.payload.imageData,
+        chatHistory,
         streamingModel,
         abortController,
-        memory,
         handleNewTokenCallback
       );
     } else if (queryMode === "summary") {
       await executeWebpageSummary(
         msg.payload.markdownContent,
-        memory,
         streamingModel,
         abortController,
         handleNewTokenCallback
