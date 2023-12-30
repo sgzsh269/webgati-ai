@@ -1,5 +1,4 @@
 import { Document } from "langchain/document";
-import { ConversationSummaryBufferMemory } from "langchain/memory";
 import { VectorStore } from "langchain/vectorstores/base";
 import {
   MODEL_PROVIDER_OPENAI,
