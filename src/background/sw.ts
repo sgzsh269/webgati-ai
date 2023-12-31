@@ -9,6 +9,7 @@ import {
   TabState,
   AppMessageUpdateModelId as SWMessageUpdateModel,
   AppMessageIndexWebpage,
+  AppMessageTabStateInit,
 } from "../utils/types";
 import { readAIModelConfig } from "../utils/storage";
 import {
@@ -80,10 +81,6 @@ chrome.runtime.onMessage.addListener(function (
       handleModelUpdate(message);
       sendResponse("OK");
       break;
-
-    case "sp_keep-alive":
-      sendResponse("OK");
-      break;
     case "sp_index-webpage":
       indexWebpage(message).then(() => sendResponse("OK"));
       break;
@@ -104,14 +101,6 @@ chrome.runtime.onConnect.addListener(async function (port) {
   }
   const tabId = parseInt(port.name.split("-")[1]);
 
-  let tabState = swService.swState.tabIdStateMap[tabId] as TabState;
-  if (!tabState) {
-    const tab = await chrome.tabs.get(tabId);
-    tabState = initTabState(tabId, tab.url);
-  }
-
-  tabState.port = port;
-
   port.onMessage.addListener((message: AppMessage) => {
     handlePortMessage(tabState, message);
   });
@@ -119,6 +108,17 @@ chrome.runtime.onConnect.addListener(async function (port) {
   port.onDisconnect.addListener(() => {
     handlePortDisconnect(tabState);
   });
+
+  let tabState = swService.swState.tabIdStateMap[tabId] as TabState;
+  if (!tabState) {
+    const tab = await chrome.tabs.get(tabId);
+    tabState = initTabState(tabId, tab.url);
+    port.postMessage({
+      type: "sw_tab-state-init",
+    } as AppMessageTabStateInit);
+  }
+
+  tabState.port = port;
 });
 
 async function handlePortMessage(tabState: TabState, message: AppMessage) {
@@ -157,6 +157,10 @@ function handleModelUpdate(message: SWMessageUpdateModel) {
   const tabState = swService.swState.tabIdStateMap[
     message.payload.tabId
   ] as TabState;
+
+  if (!tabState) {
+    return;
+  }
 
   const oldModelProvider = tabState.model?.provider;
 

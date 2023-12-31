@@ -89,6 +89,10 @@ export type AppMessageImageCapture = {
   };
 };
 
+export type AppMessageTabStateInit = {
+  type: "sw_tab-state-init";
+};
+
 export type AppMessageBotExecute = {
   type: "sp_bot-execute";
   payload:
@@ -166,6 +170,7 @@ export type AppMessage =
   | AppMessageUrlChange
   | AppMessageGetWebpage
   | AppMessageIndexWebpage
+  | AppMessageTabStateInit
   | AppMessageBotExecute
   | AppMessageBotProcessing
   | AppMessageBotTokenResponse

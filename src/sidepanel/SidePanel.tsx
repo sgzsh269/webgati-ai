@@ -100,8 +100,36 @@ export function SidePanel(): JSX.Element {
     [processToken]
   );
 
+  const sendUpdateModelMessage = useCallback(
+    async (tabId: number | null, currSelectedModelId: string | null) => {
+      if (!tabId || !currSelectedModelId) {
+        return;
+      }
+      const [modelProvider, modelName] = currSelectedModelId.split("_") as [
+        ModelProvider,
+        string
+      ];
+
+      await chrome.runtime.sendMessage<AppMessageUpdateModelId>({
+        type: "sp_update-model",
+        payload: {
+          tabId,
+          modelProvider,
+          modelName,
+        },
+      });
+    },
+    []
+  );
+
+  const handleTabStateInit = useCallback(() => {
+    setWebpageMarkdown("");
+    sendUpdateModelMessage(tabId, selectedModelId);
+  }, [tabId, selectedModelId, sendUpdateModelMessage]);
+
   const { swPort, isBotProcessing } = useChatMessaging(
     tabId,
+    handleTabStateInit,
     handleBotMessagePayload
   );
 
@@ -177,29 +205,8 @@ export function SidePanel(): JSX.Element {
   const clearSessionState = useCallback(() => {
     setWebpageMarkdown("");
     setMessages([]);
+    setImageData(null);
   }, []);
-
-  const sendUpdateModelMessage = useCallback(
-    async (tabId: number | null, currSelectedModelId: string | null) => {
-      if (!tabId || !currSelectedModelId) {
-        return;
-      }
-      const [modelProvider, modelName] = currSelectedModelId.split("_") as [
-        ModelProvider,
-        string
-      ];
-
-      await chrome.runtime.sendMessage<AppMessageUpdateModelId>({
-        type: "sp_update-model",
-        payload: {
-          tabId,
-          modelProvider,
-          modelName,
-        },
-      });
-    },
-    []
-  );
 
   const updateModelConfig = useCallback(
     async (currSelectedModelId: string | null) => {
@@ -331,11 +338,8 @@ export function SidePanel(): JSX.Element {
   );
 
   useEffect(() => {
-    if (!swPort) {
-      return;
-    }
     sendUpdateModelMessage(tabId, selectedModelId);
-  }, [swPort, tabId, selectedModelId, sendUpdateModelMessage]);
+  }, [tabId, selectedModelId, sendUpdateModelMessage]);
 
   useEffect(() => {
     updateModelConfig(selectedModelId);
