@@ -42,7 +42,7 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
     await chrome.sidePanel.setOptions({
       tabId: tab.id,
       enabled: true,
-      path: "sidepanel.html",
+      path: "public/sidepanel.html",
     });
   }
   // Re-init tab state when url changes or page is refreshed

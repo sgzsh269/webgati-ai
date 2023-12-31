@@ -12,10 +12,10 @@ const { version } = packageJson;
 const [major, minor, patch] = version.replace(/[^\d.-]+/g, "").split(/[.-]/);
 
 const icons = {
-  "16": "icon.png",
-  "32": "icon.png",
-  "48": "icon.png",
-  "128": "icon.png",
+  "16": "public/icon.png",
+  "32": "public/icon.png",
+  "48": "public/icon.png",
+  "128": "public/icon.png",
 };
 
 export default defineManifest(async (env) => ({
@@ -28,7 +28,7 @@ export default defineManifest(async (env) => ({
     default_icon: icons,
     default_title: APP_NAME,
   },
-  options_page: "settings.html",
+  options_page: "public/settings.html",
   content_scripts: [
     {
       js: ["src/content-script/index.tsx"],
@@ -47,7 +47,7 @@ export default defineManifest(async (env) => ({
   permissions: ["activeTab", "storage", "tabs", "sidePanel"],
   web_accessible_resources: [
     {
-      resources: ["settings.html"],
+      resources: ["public/settings.html"],
       matches: ["http://*/*", "https://*/*"],
     },
   ],

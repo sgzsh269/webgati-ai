@@ -12,7 +12,7 @@ export default defineConfig(async ({ mode }) => {
       target: ["esnext"],
       rollupOptions: {
         input: {
-          sidepanel: "sidepanel.html",
+          sidepanel: "public/sidepanel.html",
         },
       },
     },
