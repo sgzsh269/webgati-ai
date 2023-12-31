@@ -4,8 +4,7 @@ import { useContext, useState } from "react";
 import { AppContext } from "../../utils/app-context";
 
 export function AnalyzeWebpage(): JSX.Element {
-  const { webpageMarkdown, analyzeWebpage, modelProvider } =
-    useContext(AppContext);
+  const { webpageMarkdown, analyzeWebpage } = useContext(AppContext);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleClick = async () => {
@@ -20,7 +19,6 @@ export function AnalyzeWebpage(): JSX.Element {
       onClick={handleClick}
       notificationMessage="Webpage analyzed!"
       isLoading={isLoading}
-      disabled={!modelProvider}
     />
   );
 }

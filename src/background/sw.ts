@@ -1,43 +1,26 @@
-import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-import { MemoryVectorStore } from "langchain/vectorstores/memory";
-import { ConversationSummaryBufferMemory } from "langchain/memory";
 import {
-  MSG_TYPE_BOT_DONE,
-  MSG_TYPE_BOT_PROCESSING,
-  MSG_TYPE_BOT_TOKEN_RESPONSE,
-  MSG_TYPE_BOT_EXECUTE,
-  MSG_TYPE_GET_TAB_ID,
-  MSG_TYPE_INDEX_WEBPAGE,
-  MSG_TYPE_BOT_STOP,
-  MSG_TYPE_BOT_CLEAR_MEMORY,
-  MSG_TYPE_TOGGLE_SIDE_PANEL,
-  MSG_TYPE_SUMMARIZE_WEBPAGE,
-  MSG_TYPE_URL_CHANGE,
+  InstallType,
+  AppMessage,
+  AppMessageBotDone,
+  AppMessageBotExecute,
+  AppMessageBotProcessing,
+  AppMessageBotTokenResponse,
+  AppMessageUrlChange,
+  TabState,
+  AppMessageUpdateModelId as SWMessageUpdateModel,
+  AppMessageIndexWebpage,
+  AppMessageTabStateInit,
+} from "../utils/types";
+import { readAIModelConfig } from "../utils/storage";
+import {
+  AI_MODEL_CONFIG_DEFAULT,
   STORAGE_FIELD_AI_MODEL_CONFIG,
-  MSG_TYPE_KEEP_ALIVE,
 } from "../utils/constants";
-import { InstallType, SWState, TabState } from "../utils/types";
-import { executeSummarizer } from "./ai/summarizer";
-import { modelService } from "./ai/model-service";
-import { agentService } from "./ai/agent-service";
-import { getModelProvider } from "../utils/storage";
+import { SWService } from "./services/sw-service";
+import { AIService } from "./services/ai/ai-service";
 
-const splitter = RecursiveCharacterTextSplitter.fromLanguage("markdown", {
-  chunkSize: 2000,
-  chunkOverlap: 200,
-});
-
-const swState: SWState = {
-  installType: null,
-  tabIdStateMap: {},
-};
-
-/// INITIALIZATION
-
-chrome.runtime.onInstalled.addListener(async function () {
-  const management = await chrome.management.getSelf();
-  swState.installType = management.installType as InstallType;
-});
+const swService = new SWService();
+const aiService = new AIService(swService);
 
 /// STORAGE EVENTS
 
@@ -46,222 +29,180 @@ chrome.storage.local.onChanged.addListener(function (changes) {
     const aiModelConfigChange = changes[STORAGE_FIELD_AI_MODEL_CONFIG];
 
     if (aiModelConfigChange) {
-      modelService.updateCurrentModelProvider();
+      aiService.updateAIModelConfig(aiModelConfigChange.newValue);
     }
   }
 });
 
 /// BROWSER ACTION EVENTS (EXTENSION ICON CLICK)
 
-chrome.action.onClicked.addListener(async function (tab) {
-  try {
-    if (tab.id) {
-      await chrome.tabs.sendMessage(tab.id, {
-        type: MSG_TYPE_TOGGLE_SIDE_PANEL,
-      });
-    }
-  } catch (error: any) {
-    console.log(`Error: No webpage loaded in tab - ${error.message}`);
-  }
-});
-
 /// TAB EVENTS
-chrome.tabs.onUpdated.addListener(function (tabId, changeInfo) {
+chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
+  if (tab.url) {
+    await chrome.sidePanel.setOptions({
+      tabId: tab.id,
+      enabled: true,
+      path: "public/sidepanel.html",
+    });
+  }
   // Re-init tab state when url changes or page is refreshed
   // When page is refreshed, only 'favIconUrl' field gets updated
   if (changeInfo.url || changeInfo.favIconUrl) {
-    if (
-      changeInfo.url?.includes("chrome-extension://") ||
-      changeInfo.url?.includes("chrome://")
-    ) {
+    const tabState = swService.swState.tabIdStateMap[tabId];
+
+    if (!tabState) {
+      // tabState may not have been initialized yet when a new tab is opened
       return;
     }
 
-    const oldTabState = swState.tabIdStateMap[tabId];
+    const newUrl = changeInfo.url || tabState.url!;
+    tabState.url = newUrl;
 
-    let oldUrl = "";
-    if (oldTabState) {
-      oldUrl = oldTabState.url!;
-      oldTabState.port?.disconnect();
-      delete swState.tabIdStateMap[tabId];
-    }
+    tabState.vectorStore = null;
 
-    initTabState(tabId, changeInfo.url || oldUrl);
-
-    if (changeInfo.url) {
-      sendUrlChangeMessage(changeInfo.url);
-    } else {
-      sendUrlChangeMessage(oldUrl!);
-    }
+    sendUrlChangeMessage(tabId, newUrl);
   }
 });
 
 chrome.tabs.onRemoved.addListener(function (tabId) {
   stopBot(tabId);
-  delete swState.tabIdStateMap[tabId];
+  delete swService.swState.tabIdStateMap[tabId];
 });
 
 /// MESSAGE EVENTS
 
-chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
-  const tabId = sender.tab?.id as number;
-  const url = sender.tab?.url as string;
-  const messageType = message.type;
-
+chrome.runtime.onMessage.addListener(function (
+  message: AppMessage,
+  sender,
+  sendResponse
+) {
   switch (message.type) {
-    case MSG_TYPE_INDEX_WEBPAGE:
-      indexWebpage(tabId, url, message)
-        .then(() =>
-          sendResponse({
-            status: "success",
-          })
-        )
-        .catch(() =>
-          sendResponse({
-            status: "error",
-          })
-        );
-      break;
-    case MSG_TYPE_GET_TAB_ID:
-      sendResponse(tabId);
-      break;
-    case MSG_TYPE_KEEP_ALIVE:
+    case "sp_update-model":
+      handleModelUpdate(message);
       sendResponse("OK");
       break;
-    default:
-      console.log(
-        `Message type not implemented for chrome.runtime.onMessage listnener: ${messageType}`
-      );
+    case "sp_index-webpage":
+      indexWebpage(message).then(() => sendResponse("OK"));
+      break;
+    case "any_capture-visible-screen":
+      chrome.tabs
+        .captureVisibleTab({
+          format: "png",
+        })
+        .then((imageData) => sendResponse(imageData));
+      break;
   }
   return true;
 });
 
-chrome.runtime.onConnect.addListener(function (port) {
+chrome.runtime.onConnect.addListener(async function (port) {
   if (!port.name.includes("tab")) {
     return;
   }
   const tabId = parseInt(port.name.split("-")[1]);
-  const sender = port.sender;
 
-  let tabState = swState.tabIdStateMap[tabId] as TabState;
-  if (!tabState) {
-    initTabState(tabId, sender!.url!);
-    tabState = swState.tabIdStateMap[tabId] as TabState;
-    return;
-  }
-
-  tabState.port = port;
-
-  port.onMessage.addListener(async function (msg) {
-    switch (msg.type) {
-      case MSG_TYPE_BOT_EXECUTE:
-        invokeBot("agent", msg, tabState);
-        break;
-      case MSG_TYPE_SUMMARIZE_WEBPAGE:
-        invokeBot("docs-summarizer", msg, tabState);
-        break;
-      case MSG_TYPE_BOT_STOP:
-        stopBot(tabId);
-        break;
-      case MSG_TYPE_BOT_CLEAR_MEMORY:
-        clearBotMemory(tabState);
-        break;
-      default:
-        console.log(
-          `Message type not implemented for port listener: ${msg.type}`
-        );
-    }
+  port.onMessage.addListener((message: AppMessage) => {
+    handlePortMessage(tabState, message);
   });
 
   port.onDisconnect.addListener(() => {
-    tabState.port = null;
+    handlePortDisconnect(tabState);
   });
+
+  let tabState = swService.swState.tabIdStateMap[tabId] as TabState;
+  if (!tabState) {
+    const tab = await chrome.tabs.get(tabId);
+    tabState = initTabState(tabId, tab.url);
+    port.postMessage({
+      type: "sw_tab-state-init",
+    } as AppMessageTabStateInit);
+  }
+
+  tabState.port = port;
 });
 
-async function indexWebpage(tabId: number, url: string, message: any) {
+async function handlePortMessage(tabState: TabState, message: AppMessage) {
+  switch (message.type) {
+    case "sp_bot-execute":
+      invokeBot(message, tabState);
+      break;
+    case "sp_bot-stop":
+      stopBot(tabState.tabId);
+      break;
+    default:
+      throw new Error(
+        `Message type not implemented for port listener: ${message.type}`
+      );
+  }
+}
+
+function handlePortDisconnect(tabState: TabState) {
+  tabState.port = null;
+}
+
+async function indexWebpage(message: AppMessageIndexWebpage) {
   const pageMarkdown = message.payload.pageMarkdown;
 
-  const webpageDocs = await splitter.createDocuments([pageMarkdown]);
+  const tabId = message.payload.tabId;
 
-  const tabState = swState.tabIdStateMap[tabId] as TabState;
+  const tabState = swService.swState.tabIdStateMap[tabId] as TabState;
 
-  tabState.webpageDocs = webpageDocs;
-  tabState.vectorStore = await MemoryVectorStore.fromDocuments(
-    webpageDocs,
-    modelService.getEmbeddingModel()!
+  tabState.vectorStore = await aiService.createAndPopulateVectorStore(
+    tabId,
+    pageMarkdown
   );
 }
 
-async function initTabState(tabId: number, url: string) {
-  swState.tabIdStateMap[tabId] = {
-    tabId,
-    url,
-    botAbortController: null,
-    botMemory: null,
-    vectorStore: null,
-    webpageDocs: [],
-    port: null,
+function handleModelUpdate(message: SWMessageUpdateModel) {
+  const tabState = swService.swState.tabIdStateMap[
+    message.payload.tabId
+  ] as TabState;
+
+  if (!tabState) {
+    return;
+  }
+
+  const oldModelProvider = tabState.model?.provider;
+
+  tabState.model = {
+    provider: message.payload.modelProvider,
+    modelName: message.payload.modelName,
   };
+
+  if (oldModelProvider !== message.payload.modelProvider) {
+    tabState.vectorStore = null;
+  }
 }
 
-async function invokeBot(
-  type: "agent" | "docs-summarizer",
-  msg: any,
-  tabState: TabState
-) {
+function initTabState(tabId: number, url: string | null | undefined): TabState {
+  swService.swState.tabIdStateMap[tabId] = {
+    tabId,
+    url,
+    model: null,
+    botAbortController: null,
+    vectorStore: null,
+    port: null,
+  };
+
+  return swService.swState.tabIdStateMap[tabId]!;
+}
+
+async function invokeBot(msg: AppMessageBotExecute, tabState: TabState) {
   try {
     postBotProcessing(tabState);
-
-    const model = modelService.getCurrentLLM();
-
-    if (!tabState.vectorStore) {
-      tabState.vectorStore = await MemoryVectorStore.fromDocuments(
-        [],
-        modelService.getEmbeddingModel()!
-      );
-    }
-
-    if (!tabState.botMemory) {
-      tabState.botMemory = new ConversationSummaryBufferMemory({
-        llm: modelService.getOpenAI3Turbo(),
-        maxTokenLimit: 500,
-        memoryKey: "chat_history",
-        outputKey: "output",
-        returnMessages: true,
-      });
-    }
 
     if (!tabState.botAbortController) {
       tabState.botAbortController = new AbortController();
     }
 
-    if (type === "docs-summarizer") {
-      const markdownContent = msg.payload.markdownContent;
-      if (!markdownContent) {
-        postBotTokenResponse(tabState, "No valid content to summarize");
-        return;
-      }
-
-      await executeSummarizer(
-        markdownContent,
-        tabState.botMemory,
-        model,
-        tabState.botAbortController,
-        (token) => postBotTokenResponse(tabState, token)
-      );
-    } else {
-      const prompt = msg.payload.prompt as string;
-
-      await agentService.executeAgent(
-        swState.installType as "development" | "normal",
-        prompt.trim().replace('"', "'"),
-        tabState.vectorStore,
-        tabState.botMemory,
-        model,
-        tabState.botAbortController,
-        (token) => postBotTokenResponse(tabState, token)
-      );
-    }
+    await aiService.execute(
+      swService.swState.installType as "development" | "normal",
+      tabState.tabId,
+      msg,
+      tabState.vectorStore,
+      tabState.botAbortController,
+      (token) => postBotTokenResponse(tabState, token)
+    );
   } catch (error: any) {
     if (error.message !== "AbortError") {
       console.log(error);
@@ -273,7 +214,7 @@ async function invokeBot(
 }
 
 function stopBot(tabId: number) {
-  const tabState = swState.tabIdStateMap[tabId];
+  const tabState = swService.swState.tabIdStateMap[tabId];
 
   if (tabState) {
     const abortController = tabState.botAbortController;
@@ -284,60 +225,72 @@ function stopBot(tabId: number) {
 
 function postBotProcessing(tabState: TabState) {
   tabState.port?.postMessage({
-    type: MSG_TYPE_BOT_PROCESSING,
-  });
+    type: "sw_bot-processing",
+  } as AppMessageBotProcessing);
 }
 
 function postBotTokenResponse(tabState: TabState, token: string) {
   tabState.port?.postMessage({
-    type: MSG_TYPE_BOT_TOKEN_RESPONSE,
+    type: "sw_bot-token-response",
     payload: {
       token,
     },
-  });
+  } as AppMessageBotTokenResponse);
 }
 
 function postBotError(tabState: TabState, error: string) {
   tabState.port?.postMessage({
-    type: MSG_TYPE_BOT_TOKEN_RESPONSE,
+    type: "sw_bot-token-response",
     payload: {
       error,
     },
-  });
+  } as AppMessageBotTokenResponse);
 }
 
 function postBotDone(tabState: TabState) {
   tabState.port?.postMessage({
-    type: MSG_TYPE_BOT_DONE,
-  });
+    type: "sw_bot-done",
+  } as AppMessageBotDone);
 }
 
-function clearBotMemory(tabState: TabState) {
-  tabState.botMemory?.clear();
-}
-
-function sendUrlChangeMessage(url: string) {
-  chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
-    try {
-      const activeTabId = tabs[0].id;
-
-      if (activeTabId) {
-        await chrome.tabs.sendMessage(activeTabId, {
-          type: MSG_TYPE_URL_CHANGE,
-          payload: { url },
-        });
-      }
-    } catch (error: any) {
-      // no-op, UI component may not have been loaded due to delayed rendering
-    }
-  });
-}
-
-async function init() {
-  const modelProvider = await getModelProvider();
-  if (modelProvider) {
-    await modelService.updateCurrentModelProvider();
+async function sendUrlChangeMessage(tabId: number, url: string) {
+  // Mainly to notify content script to take action when the url changes for SPA-based webpage
+  try {
+    await chrome.runtime.sendMessage<AppMessageUrlChange>({
+      type: "sw_url-change",
+      payload: { tabId, url },
+    });
+  } catch (error: any) {
+    // no-op, this is expected when the content script hasn't been injected yet on a fresh page load
   }
 }
+
+/// INITIALIZATION
+
+chrome.runtime.onInstalled.addListener(async function (details) {
+  if (details.reason === "update") {
+    // TODO: Handle update
+  }
+  const management = await chrome.management.getSelf();
+  swService.swState.installType = management.installType as InstallType;
+});
+
+async function init() {
+  let aiModelConfig = await readAIModelConfig();
+  if (!aiModelConfig) {
+    aiModelConfig = AI_MODEL_CONFIG_DEFAULT;
+    await chrome.storage.local.set({
+      [STORAGE_FIELD_AI_MODEL_CONFIG]: aiModelConfig,
+    });
+  }
+  aiService.initialize();
+  aiService.updateAIModelConfig(aiModelConfig!);
+
+  console.log("Background service initialized");
+}
+
+chrome.sidePanel.setPanelBehavior({
+  openPanelOnActionClick: true,
+});
 
 init().catch(console.error);

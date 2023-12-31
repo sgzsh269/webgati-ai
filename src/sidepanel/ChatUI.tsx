@@ -1,48 +1,58 @@
 import React, { useState } from "react";
 import {
-  Alert,
   Box,
   Button,
-  Center,
   Loader,
   Notification,
   Stack,
-  Text,
   Group,
+  SegmentedControl,
+  Image,
+  Text,
+  ActionIcon,
 } from "@mantine/core";
-import { QuestionTextArea } from "./QuestionTextArea";
+import { QuestionTextArea } from "../common/QuestionTextArea";
 import { useEffect, useRef } from "react";
 import { useForm } from "@mantine/form";
-import { Message } from "../chatbot/Message";
+import { Message } from "./Message";
 import { useScrollIntoView } from "@mantine/hooks";
-import { handleSettingsClick } from "../utils/ui";
-import { ModelProvider } from "../utils/types";
+import { QueryMode, ModelConfig, ChatMessage } from "../utils/types";
+import { IconX } from "@tabler/icons-react";
 
 interface ChatUIProps {
-  messages: { role: "user" | "ai"; content: string }[];
-  modelProvider: ModelProvider | null;
+  messages: ChatMessage[];
   isLoading: boolean;
   disableInput: boolean;
   error: string;
+  queryMode: QueryMode;
+  modelConfig: ModelConfig | null;
+  imageData: string | null;
   setError: (error: string) => void;
   clearChatContext: () => void;
   processUserPrompt: (prompt: string) => Promise<void>;
   stopPromptProcessing: () => void;
+  setQueryMode: (mode: QueryMode) => void;
+  clearImageData: () => void;
 }
 
 export const ChatUI = ({
   messages,
-  modelProvider,
   isLoading,
   disableInput,
   error,
+  queryMode,
+  modelConfig,
+  imageData,
   setError,
   clearChatContext,
   processUserPrompt,
   stopPromptProcessing,
+  setQueryMode,
+  clearImageData,
 }: ChatUIProps): JSX.Element => {
   const formRef = useRef<HTMLFormElement>(null);
   const [showLoader, setShowLoader] = useState(false);
+
   const { scrollIntoView, scrollableRef, targetRef } =
     useScrollIntoView<HTMLDivElement>({
       offset: 60,
@@ -81,9 +91,20 @@ export const ChatUI = ({
     setShowLoader(isLoading);
   }, [isLoading]);
 
+  useEffect(() => {
+    if (error) {
+      setShowLoader(false);
+    }
+  }, [error]);
+
   const handleFormSubmit = async (values: { question: string }) => {
     form.reset();
     await processUserPrompt(values.question.trim());
+  };
+
+  const handleSegmentedControlChange = (value: QueryMode) => {
+    setQueryMode(value);
+    clearImageData();
   };
 
   return (
@@ -97,29 +118,6 @@ export const ChatUI = ({
         overflow: "hidden",
       }}
     >
-      {!modelProvider && (
-        <Center
-          sx={{
-            height: "100%",
-            width: "100%",
-          }}
-        >
-          <Alert
-            title="OpenAI API Key Required"
-            color="orange"
-            sx={{
-              width: "100%",
-            }}
-          >
-            <Stack>
-              <Text>Set OpenAI API Key</Text>
-              <Button color="orange" onClick={handleSettingsClick}>
-                Set OpenAI API Key
-              </Button>
-            </Stack>
-          </Alert>
-        </Center>
-      )}
       <Stack
         mb="4px"
         pb="36px"
@@ -127,18 +125,21 @@ export const ChatUI = ({
         sx={{ flex: 1, overflow: "scroll" }}
         ref={scrollableRef}
       >
-        {messages.slice(0, -1).map((message, index) => (
-          <Message key={index} role={message.role} content={message.content} />
-        ))}
-        {messages.length > 0 && (
-          <Message
-            role={messages[messages.length - 1].role}
-            content={messages[messages.length - 1].content}
-          />
-        )}
+        {messages.map((message, index) => {
+          if (!message.content) {
+            return null;
+          }
+          return (
+            <Message
+              key={index}
+              role={message.role}
+              content={message.content}
+            />
+          );
+        })}
         {showLoader && (
           <Box sx={{ textAlign: "center" }} ref={targetRef}>
-            <Loader variant="dots" mb="8px" />{" "}
+            <Loader variant="dots" mb="8px" />
           </Box>
         )}
       </Stack>
@@ -161,7 +162,7 @@ export const ChatUI = ({
         )}
         <form ref={formRef} onSubmit={form.onSubmit(handleFormSubmit)}>
           <Stack spacing="xs">
-            {isLoading && (
+            {isLoading ? (
               <Group position="center">
                 <Button
                   variant="outline"
@@ -171,6 +172,22 @@ export const ChatUI = ({
                   Stop
                 </Button>
               </Group>
+            ) : (
+              <SegmentedControl
+                value={queryMode}
+                onChange={handleSegmentedControlChange}
+                size="sm"
+                color="blue"
+                data={[
+                  { label: "General", value: "general" },
+                  { label: "Webpage", value: "webpage-text-qa" },
+                  {
+                    label: "Vision",
+                    value: "webpage-vqa",
+                    disabled: !modelConfig || !modelConfig.hasVision,
+                  },
+                ]}
+              />
             )}
             <QuestionTextArea
               form={form}
@@ -196,6 +213,27 @@ export const ChatUI = ({
                 Send
               </Button>
             </Group>
+            {imageData && (
+              <Box
+                sx={{
+                  width: "fit-content",
+                  borderStyle: "solid",
+                  borderWidth: "0.5px",
+                }}
+              >
+                <ActionIcon onClick={clearImageData}>
+                  <IconX size="16px" />
+                </ActionIcon>
+                <Image
+                  width="100px"
+                  height="100px"
+                  fit="contain"
+                  src={imageData}
+                  withPlaceholder
+                  placeholder={<Text>Image preview unavailable</Text>}
+                />
+              </Box>
+            )}
           </Stack>
         </form>
       </Box>

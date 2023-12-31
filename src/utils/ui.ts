@@ -47,7 +47,7 @@ export function getSelectedTextPosition(): {
   };
 }
 
-export function handleSettingsClick(): void {
+export function openSettings(): void {
   if (chrome.runtime.openOptionsPage) {
     chrome.runtime.openOptionsPage();
   } else {

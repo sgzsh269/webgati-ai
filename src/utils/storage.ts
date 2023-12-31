@@ -1,27 +1,18 @@
 import {
   STORAGE_FIELD_AI_MODEL_CONFIG,
-  STORAGE_FIELD_MODEL_PROVIDER,
+  STORAGE_FIELD_LAST_SELECTED_MODEL_ID,
 } from "./constants";
-import { AIModelConfig, ModelProvider, OpenAIConfig } from "./types";
+import { AIModelConfig, ModelProvider } from "./types";
 
-export async function getAIModelConfig(): Promise<AIModelConfig | null> {
+export async function readAIModelConfig(): Promise<AIModelConfig | null> {
   const result = await chrome.storage.local.get(STORAGE_FIELD_AI_MODEL_CONFIG);
   return result[STORAGE_FIELD_AI_MODEL_CONFIG] || null;
 }
 
-export async function getModelProvider(): Promise<ModelProvider | null> {
-  const aiModelConfig = await getAIModelConfig();
-  if (!aiModelConfig) {
-    return null;
-  }
-
-  return aiModelConfig.modelProvider;
-}
-
-export async function getModelProviderConfig(
+export async function readModelProviderConfig(
   modelProvider: ModelProvider
-): Promise<OpenAIConfig | null> {
-  const aiModelConfig = await getAIModelConfig();
+): Promise<Record<string, any> | null> {
+  const aiModelConfig = await readAIModelConfig();
   if (!aiModelConfig) {
     return null;
   }
@@ -29,30 +20,25 @@ export async function getModelProviderConfig(
   return aiModelConfig[modelProvider];
 }
 
-export async function saveModelProviderConfig(
-  modelProvider: ModelProvider,
-  config: OpenAIConfig
+export async function saveAIModelConfig(
+  config: Record<string, any>
 ): Promise<void> {
-  const aiModelConfig = await getAIModelConfig();
+  await chrome.storage.local.set({
+    [STORAGE_FIELD_AI_MODEL_CONFIG]: config,
+  });
+}
 
-  if (!aiModelConfig) {
-    await chrome.storage.local.set({
-      [STORAGE_FIELD_AI_MODEL_CONFIG]: {
-        [STORAGE_FIELD_MODEL_PROVIDER]: modelProvider,
-        [modelProvider]: {
-          ...config,
-        },
-      },
-    });
-  } else {
-    await chrome.storage.local.set({
-      [STORAGE_FIELD_AI_MODEL_CONFIG]: {
-        ...aiModelConfig,
-        [STORAGE_FIELD_MODEL_PROVIDER]: modelProvider,
-        [modelProvider]: {
-          ...config,
-        },
-      },
-    });
-  }
+export async function readLastSelectedModelId(): Promise<string | null> {
+  const result = await chrome.storage.local.get(
+    STORAGE_FIELD_LAST_SELECTED_MODEL_ID
+  );
+  return result[STORAGE_FIELD_LAST_SELECTED_MODEL_ID] || null;
+}
+
+export async function saveSelectedModelId(
+  selectedModelId: string
+): Promise<void> {
+  await chrome.storage.local.set({
+    [STORAGE_FIELD_LAST_SELECTED_MODEL_ID]: selectedModelId,
+  });
 }

@@ -9,7 +9,7 @@ import {
 } from "@mantine/core";
 import { IconSparkles } from "@tabler/icons-react";
 import { Route, Routes, NavLink } from "react-router-dom";
-import { Logo } from "../components/Logo";
+import { Logo } from "../common/Logo";
 import { ModelForm } from "./ModelForm";
 
 const data = [

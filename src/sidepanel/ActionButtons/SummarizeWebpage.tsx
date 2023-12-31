@@ -2,23 +2,31 @@ import React, { useState } from "react";
 import { ActionButton } from "./ActionButton";
 import { useContext } from "react";
 import { AppContext } from "../../utils/app-context";
-import { MSG_TYPE_SUMMARIZE_WEBPAGE } from "../../utils/constants";
-import { generatePageMarkdown } from "../../utils/markdown";
+import { AppMessageBotExecute, AppMessageGetWebpage } from "../../utils/types";
 
 export function SummarizeWebPage(): JSX.Element {
-  const { swPort, webpageMarkdown } = useContext(AppContext);
+  const { swPort, tabId } = useContext(AppContext);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleClick = async () => {
     setIsLoading(true);
-    const markdownContent = await generatePageMarkdown("summary");
+    const markdownContent = await chrome.tabs.sendMessage<AppMessageGetWebpage>(
+      tabId!,
+      {
+        type: "sp_get-webpage",
+        payload: {
+          usageType: "summary",
+        },
+      }
+    );
 
     swPort?.postMessage({
-      type: MSG_TYPE_SUMMARIZE_WEBPAGE,
+      type: "sp_bot-execute",
       payload: {
+        queryMode: "summary",
         markdownContent,
       },
-    });
+    } as AppMessageBotExecute);
     setIsLoading(false);
   };
 
@@ -29,7 +37,6 @@ export function SummarizeWebPage(): JSX.Element {
       notificationMessage="Summarizing..."
       isLoading={isLoading}
       color="blue"
-      disabled={!webpageMarkdown}
     />
   );
 }

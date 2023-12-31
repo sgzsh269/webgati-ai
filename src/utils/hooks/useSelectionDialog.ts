@@ -1,17 +1,13 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { debounce, getSelectedTextPosition } from "../ui";
-import { SELECTION_DIALOG_ROOT_ID } from "../constants";
-import { renderSelectionDialog } from "../../chatbot/SelectionDialog";
 
-const generateSelectionDialogPrompt = (
-  selectedText: string,
-  instructions: string
-) => `**Selected Text:**\n${selectedText}\n**Instructions:**\n${instructions}`;
+export function useSelectionDialog(selectionDebounceDelayMs: number): {
+  selection: ReturnType<typeof getSelectedTextPosition>;
+} {
+  const [selection, setSelection] = useState<ReturnType<
+    typeof getSelectedTextPosition
+  > | null>(null);
 
-export function useSelectionDialog(
-  onUserPrompt: (prompt: string) => void,
-  selectionDebounceDelayMs: number
-): void {
   const debouncedSelectionHandler = useCallback(
     debounce(() => {
       const selection = getSelectedTextPosition();
@@ -20,26 +16,9 @@ export function useSelectionDialog(
         return;
       }
 
-      const closeDialog = (): void => {
-        document.querySelector(`#${SELECTION_DIALOG_ROOT_ID}`)?.remove();
-      };
-
-      const handleSubmit = (instructions: string) => {
-        closeDialog();
-
-        const prompt = generateSelectionDialogPrompt(
-          selection.text,
-          instructions
-        );
-
-        onUserPrompt(prompt);
-      };
-
-      closeDialog();
-
-      renderSelectionDialog(selection, handleSubmit, closeDialog);
+      setSelection(selection);
     }, selectionDebounceDelayMs),
-    [onUserPrompt, selectionDebounceDelayMs]
+    [selectionDebounceDelayMs]
   );
 
   useEffect(() => {
@@ -52,4 +31,6 @@ export function useSelectionDialog(
       );
     };
   }, [debouncedSelectionHandler]);
+
+  return { selection };
 }

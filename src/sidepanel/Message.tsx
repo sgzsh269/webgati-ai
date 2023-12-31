@@ -11,9 +11,10 @@ import React, { useState } from "react";
 import { IconCopy } from "@tabler/icons-react";
 import remarkGfm from "remark-gfm";
 import { useTimeout } from "@mantine/hooks";
+import { ChatMessage } from "../utils/types";
 
 interface MessageProps {
-  role: "user" | "ai";
+  role: ChatMessage["role"];
   content: string;
   ref?: React.Ref<HTMLDivElement>;
 }
@@ -34,7 +35,7 @@ export const Message = React.forwardRef<HTMLDivElement, MessageProps>(
           return {
             borderRadius: theme.radius.sm,
             backgroundColor:
-              role === "user" ? theme.colors.gray[2] : theme.colors.blue[1],
+              role === "human" ? theme.colors.gray[2] : theme.colors.blue[1],
             padding: "8px",
           };
         }}

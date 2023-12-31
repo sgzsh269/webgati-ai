@@ -24,6 +24,9 @@ export function QuestionTextArea({
       placeholder={placeholder}
       minRows={2}
       onKeyDown={(event) => {
+        if (disableInput) {
+          return;
+        }
         if (event.key !== "Enter") {
           event.stopPropagation();
         } else if (event.shiftKey) {
@@ -34,7 +37,6 @@ export function QuestionTextArea({
         }
       }}
       required={required}
-      disabled={disableInput}
       {...form.getInputProps("question")}
     />
   );

@@ -1,12 +1,15 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { Chatbot } from "./Chatbot";
 import { MantineProvider, createEmotionCache } from "@mantine/core";
-import { CHATBOT_ROOT_ID, CHATBOT_SHADOW_ROOT_ID } from "../utils/constants";
+import {
+  WEBGATI_AI_ROOT_ID,
+  WEBGATI_AI_SHADOW_ROOT_ID,
+} from "../utils/constants";
 import { globalTheme } from "../utils/theme";
+import { ContentScriptApp } from "./ContentScriptApp";
 
-const root = document.createElement(CHATBOT_ROOT_ID);
-root.id = CHATBOT_ROOT_ID;
+const root = document.createElement(WEBGATI_AI_ROOT_ID);
+root.id = WEBGATI_AI_ROOT_ID;
 root.style.visibility = "visible";
 root.style.display = "block";
 
@@ -18,7 +21,7 @@ shadowRootDiv.style.height = "100%";
 
 const emotionRoot = document.createElement("div");
 
-shadowRootDiv.id = CHATBOT_SHADOW_ROOT_ID;
+shadowRootDiv.id = WEBGATI_AI_SHADOW_ROOT_ID;
 shadowRoot.appendChild(emotionRoot);
 shadowRoot.appendChild(shadowRootDiv);
 
@@ -29,6 +32,6 @@ const emotionCache = createEmotionCache({
 
 ReactDOM.createRoot(shadowRootDiv).render(
   <MantineProvider theme={globalTheme} emotionCache={emotionCache}>
-    <Chatbot />
+    <ContentScriptApp />
   </MantineProvider>
 );

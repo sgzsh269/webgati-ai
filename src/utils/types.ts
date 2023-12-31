@@ -1,30 +1,31 @@
 import { Document } from "langchain/document";
-import { ConversationSummaryBufferMemory } from "langchain/memory";
 import { VectorStore } from "langchain/vectorstores/base";
-import { MemoryVectorStore } from "langchain/vectorstores/memory";
 import {
-  MSG_TYPE_BOT_CLEAR_MEMORY,
-  MSG_TYPE_BOT_DONE,
-  MSG_TYPE_BOT_EXECUTE,
-  MSG_TYPE_BOT_PROCESSING,
-  MSG_TYPE_BOT_STOP,
-  MSG_TYPE_BOT_TOKEN_RESPONSE,
-  MSG_TYPE_GET_TAB_ID,
-  MSG_TYPE_INDEX_WEBPAGE,
-  MSG_TYPE_TOGGLE_SIDE_PANEL,
-  MSG_TYPE_URL_CHANGE,
-  STORAGE_FIELD_MODEL_PROVIDER,
-  STORAGE_FIELD_OPENAI,
+  MODEL_PROVIDER_OPENAI,
+  MODEL_PROVIDER_ANTHROPIC,
+  MODEL_PROVIDER_OLLAMA,
 } from "./constants";
 
 export type InstallType = "development" | "normal";
+export type QueryMode =
+  | AppMessagePayloadGeneral["queryMode"]
+  | AppMessagePayloadWebpageTextQA["queryMode"]
+  | AppMessagePayloadWebpageVQA["queryMode"]
+  | AppMessagePayloadSummary["queryMode"];
+
+export type BotMessageType =
+  | "agent"
+  | "docs-summarizer"
+  | "webpage-vqa"
+  | "summary";
 
 export type AppContextType = {
+  tabId: number | null;
   swPort: chrome.runtime.Port | null;
   webpageMarkdown: string;
   analyzeWebpage: () => Promise<void>;
   clearChatContext: () => Promise<void>;
-  modelProvider: ModelProvider | null;
+  handleImageCapture: (imageData: string) => void;
 };
 
 export type IndexedData = {
@@ -32,46 +33,168 @@ export type IndexedData = {
   docs: Document[];
 };
 
-export type OpenAIConfig = {
-  apiKey: string;
-  modelName: string;
-};
-
 export type ChatMessage = {
-  role: "user" | "ai";
+  role: "human" | "ai";
   content: string;
   isComplete?: boolean;
 };
 
-export type SWMessagePayloadToken = {
-  token: string;
-  isEnd?: boolean;
-  error?: string;
+export type AppMessageUrlChange = {
+  type: "sw_url-change";
+  payload: {
+    tabId: number;
+    url: string;
+  };
 };
 
-export type SWMessage = {
-  type:
-    | typeof MSG_TYPE_TOGGLE_SIDE_PANEL
-    | typeof MSG_TYPE_URL_CHANGE
-    | typeof MSG_TYPE_GET_TAB_ID
-    | typeof MSG_TYPE_INDEX_WEBPAGE
-    | typeof MSG_TYPE_BOT_EXECUTE
-    | typeof MSG_TYPE_BOT_PROCESSING
-    | typeof MSG_TYPE_BOT_TOKEN_RESPONSE
-    | typeof MSG_TYPE_BOT_DONE
-    | typeof MSG_TYPE_BOT_STOP
-    | typeof MSG_TYPE_BOT_CLEAR_MEMORY;
-  payload: SWMessagePayloadToken | any;
+export type AppMessageIndexWebpage = {
+  type: "sp_index-webpage";
+  payload: {
+    tabId: number;
+    pageMarkdown: string;
+  };
 };
+
+export type AppMessageGetWebpage = {
+  type: "sp_get-webpage";
+  payload: {
+    usageType: "general" | "summary";
+  };
+};
+
+export type AppMessageUpdateModelId = {
+  type: "sp_update-model";
+  payload: {
+    tabId: number;
+    modelProvider: ModelProvider;
+    modelName: string;
+  };
+};
+
+export type AppMessageCaptureVisibleScreen = {
+  type: "any_capture-visible-screen";
+};
+
+export type AppMessageSelectionPrompt = {
+  type: "cs_selection-prompt";
+  payload: {
+    prompt: string;
+  };
+};
+
+export type AppMessageImageCapture = {
+  type: "cs_image-capture";
+  payload: {
+    imageData: string;
+  };
+};
+
+export type AppMessageTabStateInit = {
+  type: "sw_tab-state-init";
+};
+
+export type AppMessageBotExecute = {
+  type: "sp_bot-execute";
+  payload:
+    | AppMessagePayloadGeneral
+    | AppMessagePayloadWebpageTextQA
+    | AppMessagePayloadWebpageVQA
+    | AppMessagePayloadSummary;
+};
+
+export type AppMessageBotProcessing = {
+  type: "sw_bot-processing";
+};
+
+export type AppMessageBotTokenResponse = {
+  type: "sw_bot-token-response";
+  payload: {
+    token: string;
+    error?: string;
+  };
+};
+
+export type AppMessageBotDone = {
+  type: "sw_bot-done";
+};
+
+export type AppMessageBotStop = {
+  type: "sp_bot-stop";
+};
+
+export type AppMessageBotClearMemory = {
+  type: "sp_bot-clear-memory";
+};
+
+export type AppMessageKeepAlive = {
+  type: "sp_keep-alive";
+};
+
+export type AppMessageSidePanelInit = {
+  type: "sp_side-panel-init";
+  payload: {
+    tabId: number;
+    url: string;
+  };
+};
+
+export type AppMessageStartPageSnipTool = {
+  type: "sp_start-page-snip-tool";
+};
+
+export type AppMessagePayloadGeneral = {
+  queryMode: "general";
+  prompt: string;
+  prevMessages: ChatMessage[];
+};
+
+export type AppMessagePayloadWebpageTextQA = {
+  queryMode: "webpage-text-qa";
+  prompt: string;
+  prevMessages: ChatMessage[];
+};
+
+export type AppMessagePayloadWebpageVQA = {
+  queryMode: "webpage-vqa";
+  prompt: string;
+  imageData: string;
+  prevMessages: ChatMessage[];
+};
+
+export type AppMessagePayloadSummary = {
+  queryMode: "summary";
+  markdownContent: string;
+};
+
+export type AppMessage =
+  | AppMessageUrlChange
+  | AppMessageGetWebpage
+  | AppMessageIndexWebpage
+  | AppMessageTabStateInit
+  | AppMessageBotExecute
+  | AppMessageBotProcessing
+  | AppMessageBotTokenResponse
+  | AppMessageBotDone
+  | AppMessageBotStop
+  | AppMessageBotClearMemory
+  | AppMessageKeepAlive
+  | AppMessageUpdateModelId
+  | AppMessageCaptureVisibleScreen
+  | AppMessageSidePanelInit
+  | AppMessageStartPageSnipTool
+  | AppMessageSelectionPrompt
+  | AppMessageImageCapture;
 
 export type TabState = {
   tabId: number;
   url: string | null | undefined;
   botAbortController: AbortController | null;
-  botMemory: ConversationSummaryBufferMemory | null;
-  webpageDocs: Document[] | null;
-  vectorStore: MemoryVectorStore | null;
+  vectorStore: VectorStore | null;
   port: chrome.runtime.Port | null;
+  model: {
+    provider: ModelProvider;
+    modelName: string;
+  } | null;
 };
 
 export type SWState = {
@@ -81,13 +204,21 @@ export type SWState = {
   };
 };
 
-export type ModelProvider = typeof STORAGE_FIELD_OPENAI;
+export type ModelProvider =
+  | typeof MODEL_PROVIDER_OPENAI
+  | typeof MODEL_PROVIDER_ANTHROPIC
+  | typeof MODEL_PROVIDER_OLLAMA;
+
+export type ModelConfig = {
+  label: string;
+  modelName: string;
+  maxOutputTokens: number | undefined;
+  temperature: number;
+  hasVision: boolean;
+} & Record<string, any>;
 
 export type AIModelConfig = {
-  [STORAGE_FIELD_MODEL_PROVIDER]: ModelProvider;
-  [STORAGE_FIELD_OPENAI]: OpenAIConfig;
-};
-
-export type ModelFormSubFormRef = {
-  save: () => Promise<void>;
+  [K in ModelProvider]: {
+    chatModels: Array<ModelConfig>;
+  } & Record<string, any>;
 };
