@@ -83,6 +83,10 @@ export type AppMessageSelectionPrompt = {
   };
 };
 
+export type AppMessageCheckSidePanelVisible = {
+  type: "cs_check-side-panel-visible";
+};
+
 export type AppMessageImageCapture = {
   type: "cs_image-capture";
   payload: {
@@ -185,7 +189,8 @@ export type AppMessage =
   | AppMessageSidePanelInit
   | AppMessageStartPageSnipTool
   | AppMessageSelectionPrompt
-  | AppMessageImageCapture;
+  | AppMessageImageCapture
+  | AppMessageCheckSidePanelVisible;
 
 export type TabState = {
   tabId: number;

@@ -5,6 +5,7 @@ import { PageSnipTool } from "./PageSnipTool";
 import { useContentScriptMessageListener } from "../utils/hooks/useContentScriptMessageListener";
 import { generatePageMarkdown } from "../utils/markdown";
 import {
+  AppMessageCheckSidePanelVisible,
   AppMessageGetWebpage,
   AppMessageImageCapture,
   AppMessageSelectionPrompt,
@@ -18,12 +19,26 @@ export function ContentScriptApp(): JSX.Element {
 
   const { selection } = useSelectionDialog(SELECTION_DEBOUNCE_DELAY_MS);
 
+  const checkAndInitSelectionDialog = useCallback(async () => {
+    try {
+      const result =
+        await chrome.runtime.sendMessage<AppMessageCheckSidePanelVisible>({
+          type: "cs_check-side-panel-visible",
+        });
+
+      if (result) {
+        setShowSelectionDialog(true);
+      }
+    } catch (error) {
+      // no-op
+    }
+  }, []);
+
   useEffect(() => {
     if (selection) {
-      // TODO - check if side panel is open
-      setShowSelectionDialog(true);
+      checkAndInitSelectionDialog();
     }
-  }, [selection]);
+  }, [selection, checkAndInitSelectionDialog]);
 
   const handleSelectionDialogSubmit = useCallback((prompt: string) => {
     setShowSelectionDialog(false);
