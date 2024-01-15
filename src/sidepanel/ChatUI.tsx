@@ -52,10 +52,11 @@ export const ChatUI = ({
 }: ChatUIProps): JSX.Element => {
   const formRef = useRef<HTMLFormElement>(null);
   const [showLoader, setShowLoader] = useState(false);
+  const [hasScrolled, setHasScrolled] = useState(false);
 
   const { scrollIntoView, scrollableRef, targetRef } =
     useScrollIntoView<HTMLDivElement>({
-      offset: 60,
+      offset: 100,
     });
 
   const form = useForm({
@@ -68,19 +69,6 @@ export const ChatUI = ({
     },
   });
 
-  useEffect(() => {
-    if (messages.length === 0) return;
-
-    setShowLoader(true);
-    scrollIntoView();
-  }, [messages, scrollIntoView]);
-
-  useEffect(() => {
-    if (showLoader) {
-      scrollIntoView();
-    }
-  }, [showLoader, scrollIntoView]);
-
   const handleEnterKey = (event: KeyboardEvent) => {
     event.preventDefault();
     form.validate();
@@ -89,6 +77,9 @@ export const ChatUI = ({
 
   useEffect(() => {
     setShowLoader(isLoading);
+    if (!isLoading) {
+      setHasScrolled(false);
+    }
   }, [isLoading]);
 
   useEffect(() => {
@@ -98,6 +89,7 @@ export const ChatUI = ({
   }, [error]);
 
   const handleFormSubmit = async (values: { question: string }) => {
+    setShowLoader(true);
     form.reset();
     await processUserPrompt(values.question.trim());
   };
@@ -106,6 +98,19 @@ export const ChatUI = ({
     setQueryMode(value);
     clearImageData();
   };
+
+  const lastMessage = messages[messages.length - 1];
+
+  useEffect(() => {
+    if (
+      lastMessage &&
+      !hasScrolled &&
+      (lastMessage.role === "human" || lastMessage.queryMode === "summary")
+    ) {
+      scrollIntoView();
+      setHasScrolled(true);
+    }
+  }, [lastMessage, queryMode, hasScrolled, scrollIntoView]);
 
   return (
     <Box
@@ -125,7 +130,7 @@ export const ChatUI = ({
         sx={{ flex: 1, overflow: "scroll" }}
         ref={scrollableRef}
       >
-        {messages.map((message, index) => {
+        {messages.slice(0, -1).map((message, index) => {
           if (!message.content) {
             return null;
           }
@@ -137,12 +142,19 @@ export const ChatUI = ({
             />
           );
         })}
-        {showLoader && (
-          <Box sx={{ textAlign: "center" }} ref={targetRef}>
-            <Loader variant="dots" mb="8px" />
-          </Box>
+        {lastMessage && (
+          <Message
+            ref={targetRef}
+            role={lastMessage.role}
+            content={lastMessage.content}
+          />
         )}
       </Stack>
+      {showLoader && (
+        <Box sx={{ textAlign: "center" }}>
+          <Loader variant="dots" mb="8px" />
+        </Box>
+      )}
       <Box
         sx={{
           textAlign: "center",

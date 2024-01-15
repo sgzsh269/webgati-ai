@@ -20,6 +20,7 @@ export function ContentScriptApp(): JSX.Element {
 
   useEffect(() => {
     if (selection) {
+      // TODO - check if side panel is open
       setShowSelectionDialog(true);
     }
   }, [selection]);

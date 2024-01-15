@@ -35,6 +35,7 @@ export type IndexedData = {
 
 export type ChatMessage = {
   role: "human" | "ai";
+  queryMode: QueryMode;
   content: string;
   isComplete?: boolean;
 };
@@ -109,6 +110,7 @@ export type AppMessageBotProcessing = {
 export type AppMessageBotTokenResponse = {
   type: "sw_bot-token-response";
   payload: {
+    queryMode: QueryMode;
     token: string;
     error?: string;
   };

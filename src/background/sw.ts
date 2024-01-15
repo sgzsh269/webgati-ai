@@ -10,6 +10,7 @@ import {
   AppMessageUpdateModelId as SWMessageUpdateModel,
   AppMessageIndexWebpage,
   AppMessageTabStateInit,
+  QueryMode,
 } from "../utils/types";
 import { readAIModelConfig } from "../utils/storage";
 import {
@@ -188,6 +189,8 @@ function initTabState(tabId: number, url: string | null | undefined): TabState {
 }
 
 async function invokeBot(msg: AppMessageBotExecute, tabState: TabState) {
+  const queryMode = msg.payload.queryMode;
+
   try {
     postBotProcessing(tabState);
 
@@ -201,12 +204,12 @@ async function invokeBot(msg: AppMessageBotExecute, tabState: TabState) {
       msg,
       tabState.vectorStore,
       tabState.botAbortController,
-      (token) => postBotTokenResponse(tabState, token)
+      (token) => postBotTokenResponse(queryMode, tabState, token)
     );
   } catch (error: any) {
     if (error.message !== "AbortError") {
       console.log(error);
-      postBotError(tabState, error.message);
+      postBotError(queryMode, tabState, error.message);
     }
   } finally {
     postBotDone(tabState);
@@ -229,19 +232,25 @@ function postBotProcessing(tabState: TabState) {
   } as AppMessageBotProcessing);
 }
 
-function postBotTokenResponse(tabState: TabState, token: string) {
+function postBotTokenResponse(
+  queryMode: QueryMode,
+  tabState: TabState,
+  token: string
+) {
   tabState.port?.postMessage({
     type: "sw_bot-token-response",
     payload: {
+      queryMode,
       token,
     },
   } as AppMessageBotTokenResponse);
 }
 
-function postBotError(tabState: TabState, error: string) {
+function postBotError(queryMode: QueryMode, tabState: TabState, error: string) {
   tabState.port?.postMessage({
     type: "sw_bot-token-response",
     payload: {
+      queryMode,
       error,
     },
   } as AppMessageBotTokenResponse);
