@@ -28,7 +28,7 @@ export function useChatMessaging(
           onMessage(msg.payload, false);
           break;
         case "sw_bot-done":
-          onMessage({ token: "" }, true);
+          onMessage({ queryMode: null, token: "" }, true);
           setIsBotProcessing(false);
           break;
         default:

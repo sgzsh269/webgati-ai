@@ -64,7 +64,7 @@ export function SidePanel(): JSX.Element {
   const version = manifest.version;
 
   const processToken = useCallback(
-    (queryMode: QueryMode, token: string, isDone: boolean) => {
+    (queryMode: QueryMode | null, token: string, isDone: boolean) => {
       setMessages((messages) => {
         const lastMessage = messages[messages.length - 1];
         const prevMessages = messages.slice(0, messages.length - 1);
@@ -78,7 +78,7 @@ export function SidePanel(): JSX.Element {
             ...messages,
             {
               role: "ai",
-              queryMode,
+              queryMode: queryMode!,
               content: token,
               isComplete: isDone,
             },
@@ -88,7 +88,7 @@ export function SidePanel(): JSX.Element {
           ...prevMessages,
           {
             role: "ai",
-            queryMode,
+            queryMode: lastMessage.queryMode,
             content: lastMessage.content + token,
             isComplete: isDone,
           },

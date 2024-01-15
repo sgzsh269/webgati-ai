@@ -114,7 +114,7 @@ export type AppMessageBotProcessing = {
 export type AppMessageBotTokenResponse = {
   type: "sw_bot-token-response";
   payload: {
-    queryMode: QueryMode;
+    queryMode: QueryMode | null;
     token: string;
     error?: string;
   };
