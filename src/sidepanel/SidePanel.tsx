@@ -63,38 +63,47 @@ export function SidePanel(): JSX.Element {
   const manifest = chrome.runtime.getManifest();
   const version = manifest.version;
 
-  const processToken = useCallback((token: string, isDone: boolean) => {
-    setMessages((messages) => {
-      const lastMessage = messages[messages.length - 1];
-      const prevMessages = messages.slice(0, messages.length - 1);
+  const processToken = useCallback(
+    (queryMode: QueryMode | null, token: string, isDone: boolean) => {
+      setMessages((messages) => {
+        const lastMessage = messages[messages.length - 1];
+        const prevMessages = messages.slice(0, messages.length - 1);
 
-      if (!lastMessage || lastMessage.isComplete || lastMessage.role !== "ai") {
+        if (
+          !lastMessage ||
+          lastMessage.isComplete ||
+          lastMessage.role !== "ai"
+        ) {
+          return [
+            ...messages,
+            {
+              role: "ai",
+              queryMode: queryMode!,
+              content: token,
+              isComplete: isDone,
+            },
+          ];
+        }
         return [
-          ...messages,
+          ...prevMessages,
           {
             role: "ai",
-            content: token,
+            queryMode: lastMessage.queryMode,
+            content: lastMessage.content + token,
             isComplete: isDone,
           },
         ];
-      }
-      return [
-        ...prevMessages,
-        {
-          role: "ai",
-          content: lastMessage.content + token,
-          isComplete: isDone,
-        },
-      ];
-    });
-  }, []);
+      });
+    },
+    []
+  );
 
   const handleBotMessagePayload = useCallback(
     (payload: AppMessageBotTokenResponse["payload"], isDone: boolean) => {
       if (payload.error) {
         setError(payload.error);
       } else {
-        processToken(payload.token, isDone);
+        processToken(payload.queryMode, payload.token, isDone);
       }
     },
     [processToken]
@@ -159,7 +168,7 @@ export function SidePanel(): JSX.Element {
       const prevMessages: ChatMessage[] = [];
       setMessages((messages) => {
         prevMessages.push(...messages);
-        return [...messages, { role: "human", content: prompt }];
+        return [...messages, { role: "human", queryMode, content: prompt }];
       });
 
       if (queryMode === "webpage-text-qa") {

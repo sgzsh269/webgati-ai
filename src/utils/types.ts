@@ -35,6 +35,7 @@ export type IndexedData = {
 
 export type ChatMessage = {
   role: "human" | "ai";
+  queryMode: QueryMode;
   content: string;
   isComplete?: boolean;
 };
@@ -82,6 +83,10 @@ export type AppMessageSelectionPrompt = {
   };
 };
 
+export type AppMessageCheckSidePanelVisible = {
+  type: "cs_check-side-panel-visible";
+};
+
 export type AppMessageImageCapture = {
   type: "cs_image-capture";
   payload: {
@@ -109,6 +114,7 @@ export type AppMessageBotProcessing = {
 export type AppMessageBotTokenResponse = {
   type: "sw_bot-token-response";
   payload: {
+    queryMode: QueryMode | null;
     token: string;
     error?: string;
   };
@@ -183,7 +189,8 @@ export type AppMessage =
   | AppMessageSidePanelInit
   | AppMessageStartPageSnipTool
   | AppMessageSelectionPrompt
-  | AppMessageImageCapture;
+  | AppMessageImageCapture
+  | AppMessageCheckSidePanelVisible;
 
 export type TabState = {
   tabId: number;

@@ -38,6 +38,9 @@ export function useSidePanelMessageListener(
               onImageCapture(message.payload.imageData);
               sendResponse("OK");
               break;
+            case "cs_check-side-panel-visible":
+              sendResponse(true);
+              break;
           }
         }
       }
