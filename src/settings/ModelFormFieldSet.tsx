@@ -66,7 +66,7 @@ export function ModelFormFieldSet({
               required
               {...form.getInputProps(`${formFieldModels}.${index}.temperature`)}
             />
-            <TextInput
+            <NumberInput
               label="Max Ouput Tokens"
               description="Max number of tokens to generate, leave blank for default."
               {...form.getInputProps(
